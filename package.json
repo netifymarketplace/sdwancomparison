@@ -77,7 +77,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "svix": "^1.99.1",
-    "jsdom": "27.3.0"
+    "jsdom": "26.1.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -97,5 +97,8 @@
   "overrides": {
     "uuid": "^11.1.1",
     "html-encoding-sniffer": "4.0.0"
+  },
+  "engines": {
+    "node": "24.x"
   }
 }
