@@ -11,7 +11,6 @@ import {annotateResponsePanel} from '@/lib/response-panel-contract';
 import {listPublicOutcomes} from "@/lib/market-outcomes";
 import MarketOutcomeView from "@/components/MarketOutcomeView";
 import type { Metadata } from "next";
-import { SHORTLIST_SEARCH_TITLE, SHORTLIST_SEARCH_DESCRIPTION } from "@/lib/shortlist-search-metadata";
 import { getLiveShortlistDataset } from "@/lib/live-shortlist";
 import {
   sourcingUndertaking,
@@ -28,7 +27,8 @@ import "./sourcing.css";
 import "./buyer-profiles.css";
 export const dynamic = "force-dynamic";
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: {absolute: SHORTLIST_SEARCH_TITLE}, description: SHORTLIST_SEARCH_DESCRIPTION, alternates: {canonical: `${SITE_URL}/shortlist/`} };
+  const entity = shortlistEntity((await getLiveShortlistDataset()).vendors);
+  return { title: {absolute: "Compare SD-WAN and SASE providers by sector | Netify"}, description: `Compare ${entity.counts.providers} researched SD-WAN and SASE providers against your sector challenges. Download a decision pack with evidence, qualifications and supplier questions.`, alternates: {canonical: `${SITE_URL}/shortlist/`} };
 }
 export default async function ShortlistPage({
   searchParams,
