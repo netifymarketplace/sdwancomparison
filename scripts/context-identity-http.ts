@@ -1,3 +1,4 @@
+import {coreOriginAllowed} from '../src/lib/core-host';
 import type {IncomingMessage,ServerResponse} from 'node:http';
 import {CoreError} from '../src/lib/core-phase1';
 import {requestVerification,completeVerification,ownerStatus,ownerAction,identityRate} from '../src/lib/core-identity';
@@ -6,7 +7,7 @@ export async function coreIdentityHttp(req:IncomingMessage,res:ServerResponse,ur
  if(!url.pathname.startsWith('/api/context-preview/core/identity'))return false;
  const send=(status:number,data:unknown,cookie?:string)=>{res.writeHead(status,{'content-type':'application/json','cache-control':'private, no-store','referrer-policy':'no-referrer','x-robots-tag':'noindex, nofollow','x-content-type-options':'nosniff',...(cookie?{'set-cookie':cookie}:{})});res.end(JSON.stringify(data));};
  try{
-  if(process.env.NETIFY_CORE_PHASE23!=='1'||process.env.VERCEL_ENV==='production'||req.headers.host!==new URL(origin).host)throw new CoreError(403,'local_development_only');
+  if(process.env.NETIFY_CORE_PHASE23!=='1'||!coreOriginAllowed(origin)||req.headers.host!==new URL(origin).host)throw new CoreError(403,'local_development_only');
   const action=url.pathname.split('/').filter(Boolean)[4];
   if(req.method==='GET'&&action==='status'){send(200,await ownerStatus(url.searchParams.get('project')??'',coreOwnerCookie(req)));return true;}
   if(req.method!=='POST'||req.headers.origin!==origin||!req.headers['content-type']?.startsWith('application/json'))throw new CoreError(403,'same_origin_json_required');

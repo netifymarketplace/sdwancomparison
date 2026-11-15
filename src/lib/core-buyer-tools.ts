@@ -26,7 +26,7 @@ const defs:[string,boolean,string,z.ZodType][]=[
  ['get_research',true,'Read demand evidence, cost drivers, delivery-model comparison or the complete 386-question bank. No project needed.',z.object({topic:z.enum(['demand','cost_drivers','delivery_models','questions'])}).strict()],
  ['get_sector_recommendations',true,'Read optional sector starting requirements. Nothing is applied automatically.',z.object({sector:z.string().max(100)}).strict()],
  ['list_opportunities',true,'Read public opportunities only. No buyer contact details or private brief.',empty],
- ['get_opportunity',true,'Read one public opportunity only.',z.object({id:slug}).strict()],
+ ['get_opportunity',true,'Read one public opportunity only.',z.object({id:z.string().regex(/^[a-z0-9_-]{1,100}$/)}).strict()],
  ['create_project',false,'Create one private development project without signing in. Requires an opaque creation key for safe retry. No publication.',z.object({operation_id:uuid,creation_key:z.string().regex(/^[A-Za-z0-9_-]{43}$/),instruction}).strict()],
  ['get_project',true,'Read a capability-scoped canonical project. Identity, captured mail and conversation bodies are excluded.',z.object(project).strict()],
  ['get_project_readiness',true,'Read missing scope details. Does not record a review or update retention.',z.object(project).strict()],

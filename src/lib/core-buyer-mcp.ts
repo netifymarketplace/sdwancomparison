@@ -1,6 +1,7 @@
 import {coreOriginAllowed,coreLocationPath,coreEnvironment,coreCanonicalOrigin} from './core-host';
 import {createHash} from 'node:crypto';
 import {BUYER_TOOLS,BUYER_RESOURCES,BUYER_CORE_VERSION,callBuyerTool,type BuyerToolDependencies} from './core-buyer-tools';
+import {identityRate} from './core-identity';
 import {CoreError} from './core-phase1';
 import {EstimateInput,estimate} from './estimator/engine';
 export const BUYER_PROTOCOLS=['2025-11-25','2025-06-18','2025-03-26','2024-11-05'];
@@ -27,6 +28,7 @@ export async function buyerMcpResponse(request:Request,deps:BuyerToolDependencie
  try{
   if(rpc.method==='resources/read'&&!researchOnly){const resource=BUYER_RESOURCES.find(x=>x.uri===rpc.params?.uri);if(!resource)throw new CoreError(404,'resource_unavailable');const data=await callBuyerTool('get_research',{topic:resource.uri.split('/').at(-1)},'',origin,deps);return reply(id,{contents:[{uri:resource.uri,mimeType:'application/json',text:JSON.stringify(data)}]},protocol);}
   if(rpc.method!=='tools/call')return failure(id,-32601,'Method not supported',protocol);
+  if(coreEnvironment()==='production'){const ip=(request.headers.get('x-forwarded-for')??'not-provided').split(',')[0].trim();const credential=request.headers.get('authorization')??'';await identityRate('mcp:client:'+createHash('sha256').update(credential||ip).digest('hex'),600);if(rpc.params?.name==='create_project'){await identityRate('mcp:create:'+ip,10);await identityRate('mcp:create:global',100);}}
   const requester=rpc.params?.name==='create_project'?'anonymous-create':request.headers.get('authorization')??'public',key=createHash('sha256').update(requester).digest('hex');if(counters.size>=10000){for(const [k,v] of counters)if(Date.now()-v.at>60000)counters.delete(k);if(counters.size>=10000&&!counters.has(key))throw new CoreError(429,'please_wait_before_retrying');}const bucket=counters.get(key)??{at:Date.now(),n:0};if(Date.now()-bucket.at>60000){bucket.at=Date.now();bucket.n=0;}bucket.n++;counters.set(key,bucket);if(bucket.n>(rpc.params?.name==='create_project'?10:120))throw new CoreError(429,'please_wait_before_retrying');
   if(researchOnly){if(rpc.params?.name!=='netify_estimate_sase_tco')throw new CoreError(404,'research_tool_unavailable');const input=EstimateInput.safeParse(rpc.params?.arguments);if(!input.success)throw new CoreError(422,'invalid_modelling_arguments');return result({publisher:'Netify',contract_version:BUYER_CORE_VERSION,generated_at:new Date().toISOString(),environment:coreEnvironment(),project_link:origin+coreLocationPath(),classification:'provisional_modelling',calibration:'not_approved',buyer_price_lines:false,model:estimate(input.data)});}
   const auth=request.headers.get('authorization')??'';const capability=auth.startsWith('Bearer ')?auth.slice(7):'';

@@ -1,5 +1,6 @@
 import 'server-only';
-import {coreLiveEnabled,coreCanonicalOrigin,coreOriginAllowed} from './core-host';
+import {coreLiveEnabled,coreCanonicalOrigin,coreOriginAllowed,coreEnvironment} from './core-host';
+import {privateMailEnabled} from './core-mail';
 import {Readable} from 'node:stream';
 import type {IncomingMessage,ServerResponse} from 'node:http';
 import {contextPreviewHandler} from '../../scripts/context-space-preview';
@@ -20,6 +21,7 @@ export async function platformWeb(request:Request){
    if(type.includes('text/html')||type.includes('javascript')||type.includes('text/css')){
     let text=output.toString('utf8');text=text.replaceAll('/api/context-preview','/sase/api/context-preview').replaceAll("'/locations/","'/sase/locations/").replaceAll('"/locations/','"/sase/locations/');
     if(isAsset&&raw==='/client.js'){text=text.replaceAll("location.pathname.startsWith(path)","location.pathname.replace(/^\\/sase(?=\\/)/,'').startsWith(path)");text=text.replaceAll("location.pathname.replace(/\\/$/,'')", "location.pathname.replace(/^\\/sase(?=\\/)/,'').replace(/\\/$/,'')");}
+    if(type.includes('text/html'))text=text.replace('<html','<html data-core-environment="'+coreEnvironment()+'" data-core-mail-enabled="'+String(privateMailEnabled())+'"');
     if(type.includes('text/html'))text=text.replace(/(src|href)="\/(?!sase\/|\/|https?:)([^"?#]+\.(?:js|css))("|\?)/g,'$1="'+assetPrefix+'$2$3');
     output=Buffer.from(text);
    }

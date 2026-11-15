@@ -1,6 +1,7 @@
 import {qaTiming} from './qa-timing.js';
 // Opt-in development thin slice. Existing local projects are never imported implicitly.
 export function createCorePersistence(workspace){
+ const live=document.documentElement.dataset.coreEnvironment==='production';
  const id=new URLSearchParams(location.search).get('core');if(!id)return null;
  const storeKey='netify-core-capability:'+id;
  const fragment=new URLSearchParams(location.hash.slice(1));
@@ -13,9 +14,9 @@ export function createCorePersistence(workspace){
  let edit=token;
  async function request(path,body){const r=await fetch('/api/context-preview/core'+path,{method:body?'POST':'GET',headers:{...(body?{'content-type':'application/json'}:{}),...(edit?{authorization:'Bearer '+edit}:{})},...(body?{body:JSON.stringify(body)}:{})});const value=await r.json();if(!r.ok){const error=Error(value.error==='revision_conflict'?'Another browser has saved a newer scope. Your edits are retained here. Open the project link in a new tab to review the newer version before saving.':value.message||value.error);error.code=value.error;throw error;}return value;}
  function links(){if(!current)return;editLink=authority==='edit'?location.origin+'/locations/?core='+current+'#cap='+edit:'';for(const [b,getLink] of linkButtons)b.dataset.coreLink=getLink();}
- function showReceipt(result){revision=result.revision;workspace.coreRevision?.(revision);claimed=result.claimed??claimed;status((claimed?'Private owner project':'Neon development')+' · revision '+revision+' · access ends '+new Date(result.expires_at).toLocaleDateString('en-GB')+(claimed?'':' · not claimed'));document.dispatchEvent(new CustomEvent('netify-core-receipt',{detail:{claimed,revision}}));}
+ function showReceipt(result){revision=result.revision;workspace.coreRevision?.(revision);claimed=result.claimed??claimed;status((claimed?'Private owner project':live?'Private Neon project':'Neon development')+' · revision '+revision+' · access ends '+new Date(result.expires_at).toLocaleDateString('en-GB')+(claimed?'':' · not claimed'));document.dispatchEvent(new CustomEvent('netify-core-receipt',{detail:{claimed,revision}}));}
  opening=(async()=>{
-  if(fragment.has('verify')){status('Confirm the verification link in Private access. No scope has been loaded.');return;}if(!current){status('New private development project · save to Neon');return;}
+  if(fragment.has('verify')){status('Confirm the verification link in Private access. No scope has been loaded.');return;}if(!current){status(live?'New private project · save to Neon':'New private development project · save to Neon');return;}
   const data=await request('/'+current);authority=data.authority;revision=data.revision;workspace.coreRevision?.(revision);await workspace.restoreCore(data.snapshot);links();showReceipt(data);qaTiming("load",0,current);
   if(authority==='view')status('View-only Neon project · revision '+revision+' · expires '+new Date(data.expires_at).toLocaleDateString('en-GB'));
  })().catch(e=>{status('Project not opened: '+e.message);throw e;});
