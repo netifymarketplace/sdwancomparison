@@ -1,3 +1,5 @@
+import {coreOriginAllowed,coreEnvironment} from '../src/lib/core-host';
+import {identityRate} from '../src/lib/core-identity';
 import {buyerMcpResponse} from '../src/lib/core-buyer-mcp';
 import {coreIdentityHttp} from './context-identity-http';
 import {corePhase1Http} from './context-core-http';
@@ -69,7 +71,7 @@ export async function contextPreviewHandler(req:IncomingMessage,res:ServerRespon
   }
   if(req.method==='POST'&&req.headers.origin&&![origin,'http://localhost:'+port].includes(req.headers.origin)){send(res,403,{error:'Origin not allowed.'});return;}
   if(url.pathname==='/api/context-preview/network-presence'&&req.method==='GET'){send(res,200,await readFile('data/network-presence/catalogue.json','utf8'));return;}
-  if(url.pathname==='/api/context-preview/estate-mcp'&&req.method==='POST'){if(![`127.0.0.1:${port}`,`localhost:${port}`].includes(req.headers.host??'')||!req.headers['content-type']?.startsWith('application/json')){send(res,403,{error:'Local JSON project snapshot required.'});return;}send(res,200,await estatePlanningRpc(await body(req),origin));return;}
+  if(url.pathname==='/api/context-preview/estate-mcp'&&req.method==='POST'){if(!coreOriginAllowed(origin)||!req.headers['content-type']?.startsWith('application/json')||(process.env.VERCEL_ENV&&req.headers.origin!==origin)){send(res,403,{error:'Same-origin JSON project snapshot required.'});return;}const input=await body(req);if(coreEnvironment()==='production'&&input?.params?.name==='get_ai_project_advice'){await identityRate('advisor:'+req.socket.remoteAddress,10);await identityRate('advisor:global',100);}send(res,200,await estatePlanningRpc(input,origin));return;}
   if(req.method==='GET'&&url.pathname==='/api/context-preview/location-ai-status'){send(res,200,process.env.CONTEXT_AI_SERVICE==='netify'?await existingAIStatus():{configured:Boolean(process.env.ANTHROPIC_API_KEY),mode:'local_provider'});return;}
   if(req.method==='POST'&&url.pathname==='/api/context-preview/location-import'){if(locationImports>=2){send(res,429,{error:'Two sources are already being read. Try again when one finishes.'});return;}locationImports++;try{send(res,200,await (await import('./context-location-import')).importLocations(await body(req)));}finally{locationImports--;}return;}
   if(req.method==='POST'&&url.pathname==='/api/context-preview/resolve-city'){const data=await body(req);if(typeof data.city!=='string'||!data.city.trim()||data.city.length>200||typeof data.country!=='string'||data.country.length>200)throw Error('Enter a city and optional country.');send(res,200,await (await import('./context-location-import')).resolveCity(data.city,data.country));return;}

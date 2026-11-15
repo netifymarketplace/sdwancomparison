@@ -31,6 +31,10 @@
     {
       "path": "/sase/api/cron/admin-alerts",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/sase/api/core-maintenance/",
+      "schedule": "*/15 * * * *"
     }
   ],
   "buildCommand": "node node_modules/next/dist/bin/next build --webpack"

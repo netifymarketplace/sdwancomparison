@@ -44,7 +44,7 @@ function invalidateReviews(snapshot:any){
 }
 function tokenHash(token:string){if(!/^[A-Za-z0-9_-]{43}$/.test(token))throw new CoreError(404,'project_access_denied');return sha(token);}
 export async function applyCoreSchema(){const sql=coreDatabase();const migration=await readFile('db/migrations/20261114_core_phase1.sql','utf8');const statements=migration.split(/(?=^(?:CREATE|REVOKE) )/m).filter(s=>/^(CREATE|REVOKE) /.test(s));await sql.transaction(statements.map(s=>sql.query(s,[])));return sql.query("SELECT table_name FROM information_schema.tables WHERE table_schema='netify_core_phase1' ORDER BY table_name",[]);}
-export async function createCoreProject(raw:any,operation:string,origin:string,credentials:{edit:string;view:string},importDetail?:{source_hash:string;raw_backup:string;reconciliation:unknown}){
+export async function createCoreProject(raw:any,operation:string,origin:string,credentials:{edit:string;view:string},importDetail?:{source_hash:string;raw_backup:string;reconciliation:unknown},creator?:{type:'browser'|'assistant';ref:string;instruction?:string}){
  if(!/^[a-f0-9-]{36}$/.test(operation))throw new CoreError(422,'operation_key_required');
  const snapshot=invalidateReviews(validatedSnapshot(raw));
  // The browser supplies a cryptographic project UUID; creation is idempotent
@@ -53,15 +53,16 @@ export async function createCoreProject(raw:any,operation:string,origin:string,c
  // snapshot is a JSON string scalar inside JSONB to preserve key ordering used
  // by existing review signatures. scope is separately indexed JSONB, derived
  // from this same immutable snapshot in the transaction.
- const scope=scopeOf(snapshot),hash=sha(canonical(scope));const actor={type:'browser',ref:sha(edit).slice(0,16),environment:coreEnvironment()};
+ const scope=scopeOf(snapshot),hash=sha(canonical(scope));const actor={...(creator??{type:'browser',ref:sha(edit).slice(0,16)}),environment:coreEnvironment()};const fixture=coreEnvironment()==='production'&&[process.env.NETIFY_CORE_SMOKE_PROJECT,process.env.NETIFY_CORE_SMOKE_CREATED_PROJECT].filter(Boolean).includes(id);
  const requestHash=sha(canonical({snapshot,import_source:importDetail?.source_hash??null}));
  const sql=coreDatabase();try{await sql.transaction([
-  sql.query('INSERT INTO netify_core_phase1.projects(id,current_revision) VALUES($1,1)',[id]),
+  sql.query('INSERT INTO netify_core_phase1.projects(id,current_revision,disposable_fixture) VALUES($1,1,$2)',[id,fixture]),
   sql.query('INSERT INTO netify_core_phase1.scope_revisions(project_id,revision,scope_hash,scope,snapshot,actor) VALUES($1,1,$2,$3,$4,$5)',[id,hash,JSON.stringify(scope),JSON.stringify(JSON.stringify(snapshot)),JSON.stringify(actor)]),
   sql.query("INSERT INTO netify_core_phase1.capabilities(token_hash,project_id,authority) VALUES($1,$3,'edit'),($2,$3,'view')",[sha(edit),sha(view),id]),
   sql.query("INSERT INTO netify_core_phase1.audit_events(project_id,revision,event,actor,detail) VALUES($1,1,'project.created',$2,$3)",[id,JSON.stringify(actor),JSON.stringify({scope_hash:hash,...(importDetail?{import:importDetail}:{})})]),
   sql.query('INSERT INTO netify_core_phase1.operations VALUES($1,$2,$3,$4)',[id,operation,requestHash,JSON.stringify({created:true})])
  ]);}catch(error:any){if(error.code==='23505'){await readCoreProject(id,edit);const prior=await sql.query('SELECT request_hash FROM netify_core_phase1.operations WHERE project_id=$1 AND operation_id=$2',[id,operation]);if(prior[0]?.request_hash!==requestHash)throw new CoreError(409,'operation_key_reused');}else throw error;}
+ if(coreEnvironment()==='production'&&!fixture)console.info(JSON.stringify({event:'project_started',environment:'production',project_ref:sha(id).slice(0,16),actor:actor.type,test:false}));
  const link=(token:string)=>`${origin}${coreLocationPath()}?core=${id}#cap=${token}`;
  return {...await readCoreProject(id,edit),edit_link:link(edit),view_link:link(view),claim_available:process.env.NETIFY_CORE_PHASE23==='1'};
 }

@@ -26,7 +26,7 @@ export async function requestVerification(args:{projectId:string;edit?:string;em
  const mailId=randomUUID();
  const eligible=await sql.query('SELECT netify_core_phase1.begin_verification($1,$2,$3,$4,$5,$6,$7,$8)',[projectId,args.edit?sha(args.edit):'',args.purpose,privateHash('email:'+email),sealPrivate(email),sha(challenge),mailId,sealPrivate(payload)]);
  if(privateMailEnabled()&&eligible[0]?.begin_verification===true){
-  try{await sendPrivateVerification(payload,mailId);await sql.query("UPDATE netify_core_phase1.captured_mail SET status='delivered',next_attempt_at=NULL WHERE id=$1",[mailId]);}
+  try{const delivery=await sendPrivateVerification(payload,mailId);await sql.query("UPDATE netify_core_phase1.captured_mail SET status='accepted',delivery_id=$2,delivery_ids=array_append(delivery_ids,$2),next_attempt_at=NULL WHERE id=$1",[mailId,delivery.delivery_id]);}
   catch{await sql.query("UPDATE netify_core_phase1.captured_mail SET status='failed',next_attempt_at=clock_timestamp()+interval '1 minute' WHERE id=$1",[mailId]);throw new CoreError(503,'private_mail_delivery_not_confirmed');}
  }
  return {publisher:'Netify',version:IDENTITY_VERSION,status:privateMailEnabled()?'verification_requested':'captured_if_eligible',message:privateMailEnabled()?'If the details match, a private verification link has been requested. Check your work email.':'If the details match, a verification message is captured. No email has been sent.',expires_in_minutes:15,project_link:coreLocationPath()+'?core='+projectId,live_email:privateMailEnabled()};
