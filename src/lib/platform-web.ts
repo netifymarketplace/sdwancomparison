@@ -1,4 +1,5 @@
 import 'server-only';
+import {coreLiveEnabled,coreCanonicalOrigin,coreOriginAllowed} from './core-host';
 import {Readable} from 'node:stream';
 import type {IncomingMessage,ServerResponse} from 'node:http';
 import {contextPreviewHandler} from '../../scripts/context-space-preview';
@@ -6,12 +7,14 @@ import {contextPreviewHandler} from '../../scripts/context-space-preview';
 export async function platformWeb(request:Request){
  const u=new URL(request.url),assetPrefix='/sase/locations/assets/',relativePath=u.pathname.replace(/^\/sase(?=\/)/,''),isAsset=relativePath.startsWith('/locations/assets/'),rawPath=isAsset?'/'+relativePath.slice('/locations/assets/'.length):u.pathname.replace(/^\/sase(?=\/)/,''),raw=rawPath.startsWith('/api/context-preview')?rawPath.replace(/\/$/,''):rawPath;
  if((raw==='/locations/'||raw==='/locations')&&!u.searchParams.has('core')&&!u.searchParams.has('partner_project')){u.pathname='/sase/locations/';u.searchParams.set('core','new');return Response.redirect(u,302);}
- if(!process.env.VERCEL_ENV||process.env.VERCEL_ENV==='preview'){
+ if(!process.env.VERCEL_ENV||process.env.VERCEL_ENV==='preview'||coreLiveEnabled()){
+  if(!coreOriginAllowed(u.origin))return Response.json({error:'origin_not_allowed'},{status:403});
+  const servingOrigin=coreCanonicalOrigin(u.origin);
   const bytes=request.method==='GET'||request.method==='HEAD'?null:new Uint8Array(await request.arrayBuffer());if(bytes&&bytes.byteLength>5_000_000)return Response.json({error:'request_too_large'},{status:413});
-  const req=Object.assign(Readable.from(bytes?[Buffer.from(bytes)]:[]),{method:request.method,url:raw+u.search,headers:Object.fromEntries(request.headers),socket:{remoteAddress:'platform-adapter'}}) as unknown as IncomingMessage;
+  const req=Object.assign(Readable.from(bytes?[Buffer.from(bytes)]:[]),{method:request.method,url:raw+u.search,headers:{...Object.fromEntries(request.headers),host:new URL(servingOrigin).host},socket:{remoteAddress:'platform-adapter'}}) as unknown as IncomingMessage;
   let status=200;const headers=new Headers(),chunks:Buffer[]=[];
   const res={setHeader:(k:string,v:any)=>{headers.set(k,String(v));return res;},writeHead:(code:number,values?:Record<string,string>)=>{status=code;for(const [k,v]of Object.entries(values??{}))headers.set(k,v);return res;},write:(b:any)=>{chunks.push(Buffer.from(b));return true;},end:(b?:any)=>{if(b!==undefined)chunks.push(Buffer.from(b));}} as unknown as ServerResponse;
-  await contextPreviewHandler(req,res,u.origin);let output=Buffer.concat(chunks);
+  await contextPreviewHandler(req,res,servingOrigin);let output=Buffer.concat(chunks);
   if(isAsset||raw==='/locations/'||raw==='/locations'){
    const type=headers.get('content-type')??'';
    if(type.includes('text/html')||type.includes('javascript')||type.includes('text/css')){

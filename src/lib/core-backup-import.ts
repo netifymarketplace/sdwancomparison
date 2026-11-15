@@ -1,3 +1,4 @@
+import {coreEnvironment} from './core-host';
 /** Single, explicit local-backup import. No device scanning or live KV access. */
 import {CoreError,canonical,sha,validatedSnapshot,createCoreProject} from './core-phase1';
 import {contextCatalogue} from './context-comparison-preview';
@@ -30,7 +31,7 @@ export function previewBackupImport(text:string,newId:string){
   reviews_to_repeat:reviewCount,structured_estate_bytes:Buffer.byteLength(JSON.stringify(e)),
   preserved:'All validated project fields, site exceptions, evidence, original source text, RFP question selections, local conversations and buying records. The exact original file is archived in the private creation audit.',
   changes:'New project identity and revision 1. Existing local reviews become pending in the new project, and the generated RFP site schedule reflects this. Historical local records grant no identity, supplier-sharing or delivery authority.',
-  current_project:'Unchanged',environment:'development',supplier_actions:0};
+  current_project:'Unchanged',environment:coreEnvironment(),supplier_actions:0};
  return {snapshot,reconciliation,preview_hash:sha(canonical(reconciliation))};
 }
 export async function importBackup(text:string,newId:string,previewHash:string,operation:string,origin:string,credentials:{edit:string;view:string}){

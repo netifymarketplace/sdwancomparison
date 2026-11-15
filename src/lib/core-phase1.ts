@@ -1,4 +1,4 @@
-import {coreLocationPath} from './core-host';
+import {coreLocationPath,coreEnvironment,coreLiveEnabled,CORE_LIVE_BRANCH,CORE_LIVE_HOST} from './core-host';
 import {normaliseEstate,detachLegacySchedule} from '../../preview/context-space/estate-projection.js';
 import {contextCatalogue} from './context-comparison-preview';
 import {neon} from '@neondatabase/serverless';
@@ -11,9 +11,10 @@ export const CORE_BRANCH='br-aged-union-zar77mut';
 const DEV_HOST='ep-old-union-zaxn5pyr-pooler.c-2.eu-west-2.aws.neon.tech';
 export class CoreError extends Error {constructor(public status:number,public code:string,public detail:Record<string,unknown>={}){super(code);}}
 export function coreDatabase(){
- if(process.env.VERCEL_ENV==='production'||process.env.NETIFY_CORE_ENABLED!=='1'||process.env.NETIFY_CORE_BRANCH_ID!==CORE_BRANCH)throw new CoreError(503,'development_core_disabled');
+ const live=coreEnvironment()==='production';
+ if(process.env.NETIFY_CORE_ENABLED!=='1'||(live?!coreLiveEnabled()||process.env.NETIFY_CORE_BRANCH_ID!==CORE_LIVE_BRANCH:process.env.NETIFY_CORE_BRANCH_ID!==CORE_BRANCH))throw new CoreError(503,'core_disabled');
  const url=(process.env.NETIFY_CORE_PHASE23==='1'?process.env.NETIFY_CORE_RUNTIME_DATABASE_URL:process.env.NETIFY_CORE_DATABASE_URL)??'';
- if(new URL(url).hostname!==DEV_HOST)throw new CoreError(503,'development_branch_mismatch');
+ if(new URL(url).hostname!==(live?CORE_LIVE_HOST:DEV_HOST))throw new CoreError(503,'development_branch_mismatch');
  return neon(url);
 }
 export const sha=(value:string)=>createHash('sha256').update(value).digest('hex');
@@ -52,7 +53,7 @@ export async function createCoreProject(raw:any,operation:string,origin:string,c
  // snapshot is a JSON string scalar inside JSONB to preserve key ordering used
  // by existing review signatures. scope is separately indexed JSONB, derived
  // from this same immutable snapshot in the transaction.
- const scope=scopeOf(snapshot),hash=sha(canonical(scope));const actor={type:'browser',ref:sha(edit).slice(0,16),environment:'development'};
+ const scope=scopeOf(snapshot),hash=sha(canonical(scope));const actor={type:'browser',ref:sha(edit).slice(0,16),environment:coreEnvironment()};
  const requestHash=sha(canonical({snapshot,import_source:importDetail?.source_hash??null}));
  const sql=coreDatabase();try{await sql.transaction([
   sql.query('INSERT INTO netify_core_phase1.projects(id,current_revision) VALUES($1,1)',[id]),
@@ -70,14 +71,14 @@ export async function readCoreProject(id:string,token:string){
  JOIN netify_core_phase1.capabilities c ON c.project_id=p.id
  WHERE p.id::text=$1 AND c.token_hash=$2 AND c.revoked_at IS NULL AND c.authority IN ('view','edit') AND p.expires_at>clock_timestamp()`,[id,tokenHash(token)]);
  if(!rows.length)throw new CoreError(404,'project_access_denied');const r=rows[0];
- return {publisher:'Netify',environment:'development',contract_version:'netify-core/1',project_id:r.id,revision:r.current_revision,scope_hash:r.scope_hash,expires_at:r.expires_at,authority:r.authority,snapshot:typeof r.snapshot==='string'?JSON.parse(r.snapshot):r.snapshot,project_link:`${coreLocationPath()}?core=${r.id}`,claim_available:!r.owner_id,claimed:Boolean(r.owner_id),owner_activity_at:r.last_verified_owner_at,reminder_at:r.reminder_at,purge_after:r.purge_after};
+ return {publisher:'Netify',environment:coreEnvironment(),contract_version:'netify-core/1',project_id:r.id,revision:r.current_revision,scope_hash:r.scope_hash,expires_at:r.expires_at,authority:r.authority,snapshot:typeof r.snapshot==='string'?JSON.parse(r.snapshot):r.snapshot,project_link:`${coreLocationPath()}?core=${r.id}`,claim_available:!r.owner_id,claimed:Boolean(r.owner_id),owner_activity_at:r.last_verified_owner_at,reminder_at:r.reminder_at,purge_after:r.purge_after};
 }
 export async function saveCoreProject(id:string,token:string,raw:any,base:number,operation:string,actor?:{type:'browser'|'assistant'|'verified_owner';ref:string;instruction?:string;owner_session_hash?:string},commandHash?:string){
  if(!Number.isSafeInteger(base)||base<1||!/^[a-f0-9-]{36}$/.test(operation))throw new CoreError(422,'revision_and_operation_required');
  const snapshot=invalidateReviews(validatedSnapshot(raw));if(snapshot.packet.project.id!==id)throw new CoreError(422,'project_identity_mismatch');
  const scope=scopeOf(snapshot),hash=sha(canonical(scope)),requestHash=commandHash??sha(canonical({snapshot,base}));const sql=coreDatabase();
- const rows=await sql.query('SELECT netify_core_phase1.save_scope($1,$2,$3,$4,$5,$6,$7,$8,$9) AS result',[id,tokenHash(token),base,operation,requestHash,JSON.stringify(scope),JSON.stringify(JSON.stringify(snapshot)),hash,JSON.stringify({...actor??{type:'browser',ref:sha(token).slice(0,16)},environment:'development'})]);
- const r=rows[0].result;if(r.error)throw new CoreError(r.error==='project_access_denied'?404:409,r.error,{current_revision:r.current_revision});return {publisher:'Netify',environment:'development',...r};
+ const rows=await sql.query('SELECT netify_core_phase1.save_scope($1,$2,$3,$4,$5,$6,$7,$8,$9) AS result',[id,tokenHash(token),base,operation,requestHash,JSON.stringify(scope),JSON.stringify(JSON.stringify(snapshot)),hash,JSON.stringify({...actor??{type:'browser',ref:sha(token).slice(0,16)},environment:coreEnvironment()})]);
+ const r=rows[0].result;if(r.error)throw new CoreError(r.error==='project_access_denied'?404:409,r.error,{current_revision:r.current_revision});return {publisher:'Netify',environment:coreEnvironment(),...r};
 }
 export async function coreProjection(id:string,token:string){const project=await readCoreProject(id,token);const s=project.snapshot;let document=null;try{document=buildContextProject({...s.packet.project,revision:project.revision},s.estate);}catch{/* An incomplete brief is saved, never invented to force a document. */}
  return {project,sites:s.estate.sites.map((site:any)=>({...site,effective:effective(s.estate,site)})),living_rfp:document?.markdown??null};}

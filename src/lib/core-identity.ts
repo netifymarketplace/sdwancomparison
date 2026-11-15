@@ -1,3 +1,4 @@
+import {coreEnvironment} from './core-host';
 import {coreOriginAllowed,coreLocationPath} from './core-host';
 import {createCipheriv,createDecipheriv,createHmac,randomBytes,randomUUID} from 'node:crypto';
 import {CoreError,coreDatabase,readCoreProject,sha} from './core-phase1';
@@ -20,7 +21,7 @@ export async function requestVerification(args:{projectId:string;edit?:string;em
  await identityRate('requester:'+args.requester,20);await identityRate(args.purpose+':'+projectId+':'+email);await identityRate('project:'+projectId,10);
  if(args.purpose==='claim'){const p=await readCoreProject(projectId,args.edit??'');if(p.authority!=='edit')throw new CoreError(403,'edit_link_required');if(p.claimed)throw new CoreError(409,'anonymous_claiming_closed');}
  const challenge=token(),url=origin+coreLocationPath()+'?core='+projectId+'#verify='+challenge;
- const payload={from:CORE_SENDER,to:email,purpose:args.purpose,project_id:projectId,subject:args.purpose==='claim'?'Keep your private Netify project':'Recover your private Netify project',url,expires_in_minutes:15,private_only:true,environment:'development',delivery:'captured_not_sent'};
+ const payload={from:CORE_SENDER,to:email,purpose:args.purpose,project_id:projectId,subject:args.purpose==='claim'?'Keep your private Netify project':'Recover your private Netify project',url,expires_in_minutes:15,private_only:true,environment:coreEnvironment(),delivery:'captured_not_sent'};
  await sql.query('SELECT netify_core_phase1.begin_verification($1,$2,$3,$4,$5,$6,$7,$8)',[projectId,args.edit?sha(args.edit):'',args.purpose,privateHash('email:'+email),sealPrivate(email),sha(challenge),randomUUID(),sealPrivate(payload)]);
  return {publisher:'Netify',version:IDENTITY_VERSION,status:'captured_if_eligible',message:'If the details match, a verification message is captured. No email has been sent.',expires_in_minutes:15,project_link:coreLocationPath()+'?core='+projectId,live_email:false};
 }
@@ -31,7 +32,7 @@ export async function completeVerification(challenge:unknown,origin:string){cons
 }
 export async function ownerStatus(projectId:string,session:string){const sql=coreDatabase();if(!session||!/^[A-Za-z0-9_-]{43}$/.test(session))return {owner:false};
  const rows=await sql.query(`SELECT p.id,p.current_revision,p.expires_at,p.last_verified_owner_at,p.reminder_at,p.disposable_fixture FROM netify_core_phase1.projects p JOIN netify_core_phase1.owner_sessions s ON s.project_id=p.id AND s.owner_id=p.owner_id WHERE p.id::text=$1 AND s.token_hash=$2 AND s.expires_at>clock_timestamp() AND s.revoked_at IS NULL AND p.deletion_requested_at IS NULL AND p.expires_at>clock_timestamp()`,[projectId,sha(session)]);
- if(!rows.length)return {owner:false};const r=rows[0];return {owner:true,project_id:r.id,revision:r.current_revision,access_ends_at:r.expires_at,last_owner_activity_at:r.last_verified_owner_at,reminder_at:r.reminder_at,delete_in_development:r.disposable_fixture,private_only:true};
+ if(!rows.length)return {owner:false};const r=rows[0];return {owner:true,project_id:r.id,revision:r.current_revision,access_ends_at:r.expires_at,last_owner_activity_at:r.last_verified_owner_at,reminder_at:r.reminder_at,delete_in_development:coreEnvironment()==='production'||r.disposable_fixture,private_only:true};
 }
 export async function ownerAction(projectId:string,session:string,action:string,confirmed:boolean,origin:string){requireProjectId(projectId);requireToken(session);const allowed=['keep','replace_edit','replace_view','revoke_view','delete'];if(!allowed.includes(action)||!confirmed)throw new CoreError(422,'confirmation_required');
  const replacement=action.startsWith('replace_')?token():null,sql=coreDatabase();const result=(await sql.query('SELECT netify_core_phase1.owner_action($1,$2,$3,$4) AS result',[projectId,sha(session),action,replacement?sha(replacement):null]))[0].result;if(result.error)throw new CoreError(403,result.error);
