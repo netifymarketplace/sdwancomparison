@@ -1,6 +1,6 @@
 import {coreEnvironment} from '../src/lib/core-host';
 import {coreOwnerCookie} from './context-identity-http';
-import {ownerStatus} from '../src/lib/core-identity';
+import {identityRate,ownerStatus} from '../src/lib/core-identity';
 import {sha} from '../src/lib/core-phase1';
 import type {IncomingMessage,ServerResponse} from 'node:http';
 import {CoreError,createCoreProject,readCoreProject,saveCoreProject,coreProjection} from '../src/lib/core-phase1';
@@ -18,6 +18,7 @@ export async function corePhase1Http(req:IncomingMessage,res:ServerResponse,url:
   if(req.method!=='POST'||req.headers.origin!==origin||!req.headers['content-type']?.startsWith('application/json'))throw new CoreError(403,'same_origin_json_required');
   const chunks:Buffer[]=[];let size=0;for await(const c of req){const b=Buffer.from(c);size+=b.length;if(size>5_000_000)throw new CoreError(413,'project_too_large_not_truncated',{message:'Request exceeds 5,000,000 UTF-8 bytes. Nothing was shortened or saved.'});chunks.push(b);}
   const data=JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  if(coreEnvironment()==='production'){const ip=req.socket.remoteAddress??'not-provided';await identityRate('core:web:'+sha(ip),600);if(!id||id==='import'){await identityRate('core:create:'+sha(ip),10);await identityRate('core:create:global',100);}}
   const bucket=buckets.get(req.socket.remoteAddress??'local')??{at:Date.now(),count:0};if(Date.now()-bucket.at>60000){bucket.at=Date.now();bucket.count=0;}bucket.count++;buckets.set(req.socket.remoteAddress??'local',bucket);if(bucket.count>60)throw new CoreError(429,'local_request_limit');
   if(id==='import-preview'){const plan=previewBackupImport(data.backup,data.new_project_id);send(200,{publisher:'Netify',environment:coreEnvironment(),reconciliation:plan.reconciliation,preview_hash:plan.preview_hash});return true;}
   if(id==='import'){send(201,await importBackup(data.backup,data.new_project_id,data.preview_hash,data.operation_id,origin,data.credentials));return true;}

@@ -1,3 +1,4 @@
+import {coreBuyerRegistryEnabled} from '@/lib/core-host';
 import { RESEARCH_METRIC_METHOD, researchMetrics } from "@/lib/research-metrics";
 import { publicProviderEvidence, publicEvidenceProviders } from "@/lib/public-provider-evidence";
 import { BEST_PAGES } from "@/lib/best-pages";
@@ -44,7 +45,7 @@ export async function GET() {
   sections.push("");
   sections.push(`Netify Demand Index (live, anonymised marketplace demand by sector and technology): ${SITE_URL}/demand?utm_source=ai_assistant&utm_medium=llms · twin: ${SITE_URL}/demand/data.json`);
   sections.push(`Interactive shortlist builder: ${SITE_URL}/shortlist/?utm_source=ai_assistant&utm_medium=llms (open research and private sourcing; supplier contact requires buyer approval)`);
-  sections.push(`MCP server: POST ${SITE_URL}/api/mcp/ (tools: build_sase_shortlist, list_sase_features, list_sase_vendors, get_sase_vendor_profile)`);
+  sections.push(`MCP server: POST ${SITE_URL}/api/mcp/ (tools: ${coreBuyerRegistryEnabled()?'list_providers, get_provider_evidence, get_research, create_project, get_project_readiness, get_price_lines, prepare_pricing_request':'build_sase_shortlist, list_sase_features, list_sase_vendors, get_sase_vendor_profile'})`);
 
   return new Response(sections.join("\n"), {
     headers: { "content-type": "text/plain; charset=utf-8" },

@@ -13,7 +13,7 @@ import {prepareComparisonRecord,type PublishedProvider} from './sector-compariso
 import {compilePreviewPricedScope} from './pricing-preview';
 import {COST_DRIVER_DEFINITIONS,DELIVERY_MODEL_COMPARISON} from './cost-page-copy';
 import {CORE_LEGACY_TOOL_DECISIONS} from './core-legacy-tool-decisions';
-export const BUYER_CORE_VERSION='netify-buyer-core/3-dev-20261114';
+export const BUYER_CORE_VERSION='netify-buyer-core/3-20261115';
 const text=z.string().max(20000),uuid=z.string().uuid(),slug=z.string().regex(/^[a-z0-9-]+$/),instruction=z.string().min(3).max(2000),project={project_id:uuid},write={...project,base_revision:z.number().int().min(1),operation_id:uuid,instruction};
 const site=z.object({id:z.string().min(1).max(100),name:z.string().min(1).max(300),type:z.string().max(100),city:z.string().max(300),country:z.string().max(300),region:z.string().max(100),count:z.number().int().min(1).max(100000),users:z.number().int().min(0).max(1000000),lat:z.number().nullable(),lng:z.number().nullable(),notes:text,apps:text,clouds:text,circuit:text,overrides:z.record(z.string(),z.boolean()),connectivity:SiteNetworkPlanSchema.optional(),bandwidth:text.optional(),resilience:text.optional(),features:z.record(z.string(),z.array(z.string().max(200))).optional(),original:z.record(z.string(),z.unknown()).optional()}).strict();
 const terms=z.object({termMonths:z.union([z.literal(12),z.literal(24),z.literal(36),z.literal(60),z.null()]),bandwidthMbps:z.number().positive().max(1000000).nullable(),accessType:text.nullable(),resilience:text.nullable(),includeConnectivity:z.boolean()}).strict();
@@ -27,7 +27,7 @@ const defs:[string,boolean,string,z.ZodType][]=[
  ['get_sector_recommendations',true,'Read optional sector starting requirements. Nothing is applied automatically.',z.object({sector:z.string().max(100)}).strict()],
  ['list_opportunities',true,'Read public opportunities only. No buyer contact details or private brief.',empty],
  ['get_opportunity',true,'Read one public opportunity only.',z.object({id:z.string().regex(/^[a-z0-9_-]{1,100}$/)}).strict()],
- ['create_project',false,'Create one private development project without signing in. Requires an opaque creation key for safe retry. No publication.',z.object({operation_id:uuid,creation_key:z.string().regex(/^[A-Za-z0-9_-]{43}$/),instruction}).strict()],
+ ['create_project',false,'Create one private project without signing in. Requires an opaque creation key for safe retry. No publication.',z.object({operation_id:uuid,creation_key:z.string().regex(/^[A-Za-z0-9_-]{43}$/),instruction}).strict()],
  ['get_project',true,'Read a capability-scoped canonical project. Identity, captured mail and conversation bodies are excluded.',z.object(project).strict()],
  ['get_project_readiness',true,'Read missing scope details. Does not record a review or update retention.',z.object(project).strict()],
  ['get_next_action',true,'Read a governed next step and project link. Does not write.',z.object(project).strict()],
@@ -44,7 +44,7 @@ const defs:[string,boolean,string,z.ZodType][]=[
  ['get_living_rfp',true,'Read the full Living RFP from the current canonical estate, with all sites. No generation into a duplicate custom text field.',z.object(project).strict()],
  ['update_rfp_section',false,'Edit business wording, supplier questions, procurement notes or RFI/RFP format through the same project revision.',z.object({...write,section:z.enum(['business','supplier_questions','procurement_notes','format','timescale']),value:z.union([text,z.array(z.string().max(100)).max(500)])}).strict()],
  ['get_price_lines',true,'Read priced-scope components. Unpriced lines say awaiting supplier; no provisional TCO figures are used.',z.object(project).strict()],
- ['get_supplier_responses',true,'Read response availability for this project. No supplier response ingestion is enabled in this development phase.',z.object(project).strict()],
+ ['get_supplier_responses',true,'Read response availability for this project. Supplier response ingestion is not enabled.',z.object(project).strict()],
  ['prepare_pricing_request',false,'Prepare an unissued revision-bound pricing preview. No supplier is contacted. Verified-human approval and confirmed participation remain required.',z.object({...write,providers:z.array(slug).min(1).max(30)}).strict()],
 ];
 export const BUYER_TOOLS=defs.map(([name,readOnlyHint,description,schema])=>({name,title:name.replaceAll('_',' '),description,inputSchema:z.toJSONSchema(schema),annotations:{readOnlyHint,destructiveHint:false,idempotentHint:true,openWorldHint:false}}));
