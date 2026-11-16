@@ -6,7 +6,7 @@ import {CoreError,sha} from './core-phase1';
 export const AGENT_SCOPES=['project:read','project:write'] as const;
 export const AGENT_ORIGIN=process.env.VERCEL_ENV==='preview'&&process.env.VERCEL_URL?'https://'+process.env.VERCEL_URL:'https://netify.co.uk';
 // The existing backend host can serve standards-based root discovery without changing the apex application.
-export const AGENT_ISSUER=process.env.VERCEL_ENV==='preview'?AGENT_ORIGIN:'https://sasecomparison-netifymarketplace.vercel.app';
+export const AGENT_ISSUER=process.env.VERCEL_ENV==='preview'?AGENT_ORIGIN:'https://project-8q2xb.vercel.app';
 export const AGENT_RESOURCE=AGENT_ORIGIN+'/sase/api/mcp/';
 type Grant={clientId:string;redirect:string;resource:string;scope:string[];projectId:string;ownerId:string;capCipher:string;expiresAt:string;challenge:string;used:boolean};
 type Token={clientId:string;resource:string;scope:string[];projectId:string;ownerId:string;capCipher:string;expiresAt:string;refreshHash:string;refreshExpires:string;revoked:boolean};
