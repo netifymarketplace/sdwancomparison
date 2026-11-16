@@ -48,6 +48,10 @@
       "destination": "/sase/.well-known/oauth-protected-resource/"
     },
     {
+      "source": "/marketplace/",
+      "destination": "/sase/marketplace/"
+    },
+    {
       "source": "/marketplace/:path*",
       "destination": "/sase/marketplace/:path*"
     }

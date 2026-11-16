@@ -1,6 +1,7 @@
 /** Only the live platform adapter uses these exact, owner-approved status corrections. */
 export const FINAL_STATUS_STRINGS=[
  ['Local preview: shortlisting and RFP drafting are connected. Publication, supplier responses, messaging and demo booking are not enabled.','Supplier contact requires your approval.'],
+ ['Local mockup: supplier sending and live bids are not enabled.','Supplier contact requires your approval.'],['These are local previews; nothing will be sent.','Nothing will be sent without your approval.'],['All activity here stays in this local project.','Your project stays private.'],['Locations and requirements stay in this local project. No suppliers are contacted.','Your locations and requirements stay private. No supplier has been contacted.'],['No supplier is contacted in this mockup.','No supplier has been contacted.'],
  ['Private local workspace','Private workspace'],['Private local test workspace','Reseller workspace'],['Local preview · nothing sent','Nothing sent'],['PRIVATE LOCAL TEST','REQUEST PREPARATION'],
  ['Private local preview. No live marketplace project or publication is created.','Private project. Nothing has been published.'],
  ['Private local project','Private project'],['Private local draft','Private draft'],['Private local mockup','Private project'],['Context room','Marketplace'],
