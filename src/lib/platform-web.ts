@@ -1,6 +1,11 @@
 import 'server-only';
+import {withTrustedMeasurement} from './final-measurement-context';
 import {coreLiveEnabled,coreCanonicalOrigin,coreOriginAllowed,coreEnvironment} from './core-host';
 import {privateMailEnabled} from './core-mail';
+import {finalEnabled} from './final-platform-flags';
+import {serverResellerClient} from './final-reseller-client';
+import {finalWorkspaceClient} from './final-workspace-client';
+import {honestPlatformStatus,finalPlatformClient} from './final-public-status';
 import {withPlatformLoading,platformLoadingScript} from './platform-loading';
 import {Readable} from 'node:stream';
 import type {IncomingMessage,ServerResponse} from 'node:http';
@@ -11,16 +16,19 @@ export async function platformWeb(request:Request){
  if(!process.env.VERCEL_ENV||process.env.VERCEL_ENV==='preview'||coreLiveEnabled()){
   if(!coreOriginAllowed(u.origin))return Response.json({error:'origin_not_allowed'},{status:403});
   if(isAsset&&raw==='/platform-loading.js')return new Response(platformLoadingScript,{headers:{'content-type':'text/javascript; charset=utf-8','cache-control':'private, no-store','x-robots-tag':'noindex, nofollow'}});
+  if(isAsset&&raw==='/final-workspace.js')return new Response(finalWorkspaceClient,{headers:{'content-type':'text/javascript; charset=utf-8','cache-control':'private, no-store'}});
+  if(isAsset&&raw==='/final-platform.js')return new Response(finalPlatformClient,{headers:{'content-type':'text/javascript; charset=utf-8','cache-control':'private, no-store','x-robots-tag':'noindex, nofollow'}});
   const servingOrigin=coreCanonicalOrigin(u.origin);
   const bytes=request.method==='GET'||request.method==='HEAD'?null:new Uint8Array(await request.arrayBuffer());if(bytes&&bytes.byteLength>5_000_000)return Response.json({error:'request_too_large'},{status:413});
   const req=Object.assign(Readable.from(bytes?[Buffer.from(bytes)]:[]),{method:request.method,url:raw+u.search,headers:{...Object.fromEntries(request.headers),host:new URL(servingOrigin).host},socket:{remoteAddress:request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()||'platform-adapter'}}) as unknown as IncomingMessage;
   let status=200;const headers=new Headers(),chunks:Buffer[]=[];
   const res={setHeader:(k:string,v:any)=>{headers.set(k,String(v));return res;},writeHead:(code:number,values?:Record<string,string>)=>{status=code;for(const [k,v]of Object.entries(values??{}))headers.set(k,v);return res;},write:(b:any)=>{chunks.push(Buffer.from(b));return true;},end:(b?:any)=>{if(b!==undefined)chunks.push(Buffer.from(b));}} as unknown as ServerResponse;
-  await contextPreviewHandler(req,res,servingOrigin);let output=Buffer.concat(chunks);
+  await withTrustedMeasurement(request,()=>contextPreviewHandler(req,res,servingOrigin));let output=Buffer.concat(chunks);
   if(isAsset||raw==='/locations/'||raw==='/locations'){
    const type=headers.get('content-type')??'';
    if(type.includes('text/html')||type.includes('javascript')||type.includes('text/css')){
-    let text=output.toString('utf8');text=text.replaceAll('/api/context-preview','/sase/api/context-preview').replaceAll("'/locations/","'/marketplace/").replaceAll('"/locations/','"/marketplace/');
+    let text=output.toString('utf8');if(isAsset&&raw==='/partner-workspace.js'&&finalEnabled('reseller'))text=serverResellerClient(text);if(isAsset&&raw==='/core-identity.js')text="import {mountFinalWorkspace} from './final-workspace.js';\n"+text.replace('queueMicrotask(()=>mountCoreDesk(workspace,core))','queueMicrotask(()=>{mountCoreDesk(workspace,core);mountFinalWorkspace(workspace,core);})');if(finalEnabled('status'))text=honestPlatformStatus(text);text=text.replaceAll('/api/context-preview','/sase/api/context-preview').replaceAll("'/locations/","'/marketplace/").replaceAll('"/locations/','"/marketplace/');
+    if(type.includes('text/html'))text=text.replace('<html','<html data-final-agents="'+finalEnabled('agents')+'" data-final-dispatch="'+finalEnabled('dispatch')+'" data-final-comparison="'+finalEnabled('comparison')+'" data-final-reseller="'+finalEnabled('reseller')+'" data-final-status="'+finalEnabled('status')+'" data-final-funnel="'+finalEnabled('funnel')+'"').replace('</body>','<script defer src="/marketplace/assets/final-platform.js"></script></body>');
     if(isAsset&&raw==='/client.js'){text=text.replaceAll("location.pathname.startsWith(path)","location.pathname.replace(/^\\/sase(?=\\/)/,'').replace(/^\\/marketplace(?=\\/|$)/,'/locations').startsWith(path)");text=text.replaceAll("location.pathname.replace(/\\/$/,'')", "location.pathname.replace(/^\\/sase(?=\\/)/,'').replace(/^\\/marketplace(?=\\/|$)/,'/locations').replace(/\\/$/,'')");}
     if(type.includes('text/html'))text=withPlatformLoading(text.replace('<html','<html data-core-environment="'+coreEnvironment()+'" data-core-mail-enabled="'+String(privateMailEnabled())+'" data-core-desk-enabled="'+String(process.env.NETIFY_CORE_DESK_ENABLED==='1')+'"'));
     if(type.includes('text/html'))text=text.replace(/(src|href)="\/(?!sase\/|marketplace\/|\/|https?:)([^"?#]+\.(?:js|css))("|\?)/g,'$1="'+assetPrefix+'$2$3');

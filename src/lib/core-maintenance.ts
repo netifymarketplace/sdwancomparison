@@ -1,4 +1,5 @@
 import {deliverDeskRequest} from './core-desk';
+import {dailyOwnerSummary} from './final-notifications';
 /** Retention is based on successful scope edits or verified owner activity, never reads. */
 import {randomUUID} from 'node:crypto';import {neon} from '@neondatabase/serverless';
 import {coreDatabase,CoreError} from './core-phase1';import {coreEnvironment,CORE_LIVE_HOST,coreLocationPath} from './core-host';import {openPrivate,sealPrivate} from './core-identity';import {privateMailEnabled,sendPrivateVerification,sendRetentionNotice} from './core-mail';
@@ -25,5 +26,6 @@ export async function runCoreMaintenance(fixtureIds?:string[]){
   for(const d of waiting)try{await deliverDeskRequest(d.id,live?'https://netify.co.uk':'http://127.0.0.1:3023');counts.desk_accepted++;}catch{counts.desk_failed++;}
  }
  const cleaned=(await purge.query('SELECT netify_core_phase1.cleanup_transients() AS result',[]))[0].result;counts.transients_deleted=cleaned.deleted_transient_rows;
+ await dailyOwnerSummary();
  return {publisher:'Netify',environment:coreEnvironment(),...counts};
 }

@@ -3,6 +3,7 @@ import {normaliseEstate,detachLegacySchedule} from '../../preview/context-space/
 import {contextCatalogue} from './context-comparison-preview';
 import {neon} from '@neondatabase/serverless';
 import {createHash} from 'node:crypto';
+import {measureCoreScope} from './final-measurement-hooks';
 import {readFile} from 'node:fs/promises';
 import {ContextWorkingBackupSchema,buildContextProject} from './context-project-preview';
 import {validateEstate,siteReviewSignature,userReviewSignature,effective} from '../../preview/context-space/location-model.js';
@@ -62,11 +63,13 @@ export async function createCoreProject(raw:any,operation:string,origin:string,c
   sql.query("INSERT INTO netify_core_phase1.audit_events(project_id,revision,event,actor,detail) VALUES($1,1,'project.created',$2,$3)",[id,JSON.stringify(actor),JSON.stringify({scope_hash:hash,...(importDetail?{import:importDetail}:{})})]),
   sql.query('INSERT INTO netify_core_phase1.operations VALUES($1,$2,$3,$4)',[id,operation,requestHash,JSON.stringify({created:true})])
  ]);}catch(error:any){if(error.code==='23505'){await readCoreProject(id,edit);const prior=await sql.query('SELECT request_hash FROM netify_core_phase1.operations WHERE project_id=$1 AND operation_id=$2',[id,operation]);if(prior[0]?.request_hash!==requestHash)throw new CoreError(409,'operation_key_reused');}else throw error;}
+ await measureCoreScope(id,null,snapshot,operation,actor.type==='assistant'?'mcp':'web').catch(()=>console.error('platform_measurement_unavailable'));
  if(coreEnvironment()==='production'&&!fixture)console.info(JSON.stringify({event:'project_started',environment:'production',project_ref:sha(id).slice(0,16),actor:actor.type,test:false}));
  const link=(token:string)=>`${origin}${coreLocationPath()}?core=${id}#cap=${token}`;
  return {...await readCoreProject(id,edit),edit_link:link(edit),view_link:link(view),claim_available:process.env.NETIFY_CORE_PHASE23==='1'};
 }
 export async function readCoreProject(id:string,token:string){
+ if(token.startsWith('reseller_'))await import('./final-reseller-runtime').then(m=>m.guardFinalDelegation(id,token));
  const sql=coreDatabase();const rows=await sql.query(`SELECT p.id,p.current_revision,p.expires_at,p.owner_id,p.last_verified_owner_at,p.reminder_at,p.purge_after,r.scope_hash,r.snapshot,c.authority FROM netify_core_phase1.projects p
  JOIN netify_core_phase1.scope_revisions r ON r.project_id=p.id AND r.revision=p.current_revision
  JOIN netify_core_phase1.capabilities c ON c.project_id=p.id
@@ -77,9 +80,10 @@ export async function readCoreProject(id:string,token:string){
 export async function saveCoreProject(id:string,token:string,raw:any,base:number,operation:string,actor?:{type:'browser'|'assistant'|'verified_owner';ref:string;instruction?:string;owner_session_hash?:string},commandHash?:string){
  if(!Number.isSafeInteger(base)||base<1||!/^[a-f0-9-]{36}$/.test(operation))throw new CoreError(422,'revision_and_operation_required');
  const snapshot=invalidateReviews(validatedSnapshot(raw));if(snapshot.packet.project.id!==id)throw new CoreError(422,'project_identity_mismatch');
+ const before=await readCoreProject(id,token);
  const scope=scopeOf(snapshot),hash=sha(canonical(scope)),requestHash=commandHash??sha(canonical({snapshot,base}));const sql=coreDatabase();
  const rows=await sql.query('SELECT netify_core_phase1.save_scope($1,$2,$3,$4,$5,$6,$7,$8,$9) AS result',[id,tokenHash(token),base,operation,requestHash,JSON.stringify(scope),JSON.stringify(JSON.stringify(snapshot)),hash,JSON.stringify({...actor??{type:'browser',ref:sha(token).slice(0,16)},environment:coreEnvironment()})]);
- const r=rows[0].result;if(r.error)throw new CoreError(r.error==='project_access_denied'?404:409,r.error,{current_revision:r.current_revision});return {publisher:'Netify',environment:coreEnvironment(),...r};
+ const r=rows[0].result;if(r.error)throw new CoreError(r.error==='project_access_denied'?404:409,r.error,{current_revision:r.current_revision});await measureCoreScope(id,before.snapshot,snapshot,operation,actor?.type==='assistant'?'mcp':'web').catch(()=>console.error('platform_measurement_unavailable'));return {publisher:'Netify',environment:coreEnvironment(),...r};
 }
 export async function coreProjection(id:string,token:string){const project=await readCoreProject(id,token);const s=project.snapshot;let document=null;try{document=buildContextProject({...s.packet.project,revision:project.revision},s.estate);}catch{/* An incomplete brief is saved, never invented to force a document. */}
  return {project,sites:s.estate.sites.map((site:any)=>({...site,effective:effective(s.estate,site)})),living_rfp:document?.markdown??null};}

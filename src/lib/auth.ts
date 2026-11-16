@@ -143,6 +143,7 @@ export async function notifyNewSignup(
   // (and the admin console signs them in as "buyer"), so they are not real
   // marketplace sign-ups and would only be noise.
   if (isAdminEmail(email) || isNetifyDomain(emailDomain(email) ?? "")) return false;
+  await import('./final-notifications').then(m=>m.queueOwnerNotification('legacy_signup',email.toLowerCase())).catch(()=>console.error('owner_notification_queue_unavailable'));
   const key = activityMailKey();
   if (!key) return false;
   const to = process.env.SIGNUP_NOTIFY_EMAIL ?? "support@netify.com";

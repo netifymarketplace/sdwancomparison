@@ -1,4 +1,5 @@
 import {coreDatabase} from './core-phase1';
+import {recordOwnerDelivery} from './final-notifications';
 /** Verified private-project mail only. No sign-in publication or supplier flow is reused. */
 import {CoreError} from './core-phase1';
 export const privateMailEnabled=()=>process.env.NETIFY_CORE_MAIL_MODE==='live'&&process.env.NETIFY_CORE_MAIL_READY==='1'&&process.env.NETIFY_CORE_SECURITY_TRACKING_OFF==='1';
@@ -20,6 +21,7 @@ export async function sendRetentionNotice(payload:{to:string;url:string;deadline
 /** Called only after the existing Resend webhook's signature has been verified. */
 export async function recordPrivateMailEvent(deliveryId:string,event:string){
  if(!deliveryId||!['email.delivered','email.bounced','email.complained'].includes(event))return false;
+ await recordOwnerDelivery(deliveryId,event);
  const sql=coreDatabase();const status=event==='email.delivered'?'delivered':event==='email.bounced'?'bounced':'suppressed';
  const rows=await sql.query("UPDATE netify_core_phase1.captured_mail SET status=$2,delivery_round=delivery_round+CASE WHEN $2='bounced' THEN 1 ELSE 0 END,last_bounced_delivery_id=CASE WHEN $2='bounced' THEN $1 ELSE last_bounced_delivery_id END,next_attempt_at=CASE WHEN $2='bounced' AND expires_at>clock_timestamp() THEN least(expires_at,clock_timestamp()+CASE WHEN purpose='retention' THEN interval '1 day' ELSE interval '1 minute' END) ELSE NULL END WHERE delivery_id=$1 AND status<>$2 AND ($2<>'bounced' OR last_bounced_delivery_id IS DISTINCT FROM $1) RETURNING id",[deliveryId,status]);
  const desk=await sql.query("UPDATE netify_core_phase1.desk_requests SET status=$2,next_attempt_at=NULL WHERE delivery_id=$1 AND $2 IN ('bounced','suppressed') RETURNING project_id,revision",[deliveryId,status]);

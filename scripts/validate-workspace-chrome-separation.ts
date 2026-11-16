@@ -196,6 +196,7 @@ function main() {
     const entries = readdirSync(path.join(ROOT, "src/app"));
     const allowedTopLevel = new Set([
       "(marketing)", "(workspace)", "(studio)", "api",
+      "locations", "marketplace", "marketplace-evidence", "supplier-response",
       "layout.tsx", "not-found.tsx", "globals.css",
       "robots.txt", "sitemap.xml", ".well-known", "llms.txt",
       "llms-full.txt", "capabilities.json", "question-bank.json",

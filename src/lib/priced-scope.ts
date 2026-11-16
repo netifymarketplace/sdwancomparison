@@ -62,7 +62,7 @@ export const SupplierPricingSettingsSchema=z.object({contract:z.literal(SUPPLIER
 export type SupplierPricingSettings=z.infer<typeof SupplierPricingSettingsSchema>;
 const money=z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
 const provenance=z.object({source:text,sourceRef:text,issuedAt:date,validUntil:date}).strict().refine(v=>Date.parse(v.validUntil)>Date.parse(v.issuedAt),'Invalid price validity');
-const quoteLine=z.object({scopeLineId:id,status:z.enum(['firm','indicative','awaiting_supplier']),mode,level,
+const quoteLine=z.object({lineId:id.optional(),scopeLineId:id,status:z.enum(['firm','indicative','awaiting_supplier']),mode,level,
  source:provenance.nullable(),unit:z.enum(['site','user','device','licence','estate']),quantity:count.nullable(),currency:z.string().regex(/^[A-Z]{3}$/).nullable(),
  amountMinor:money.nullable(),charge:z.enum(['one_off','recurring']).nullable(),periodMonths:z.number().int().positive().max(120).nullable(),
  inclusions:z.array(text).max(100),exclusions:z.array(text).max(100),assumptions:z.array(text).max(100),
@@ -78,7 +78,7 @@ export const StructuredQuotationSchema=z.object({contract:z.literal(QUOTATION_VE
  receivedAt:date,reference:text,proposedServices:z.array(text).max(100).optional(),deliveryResponsibilities:z.array(z.object({organisation:text,responsibility:text}).strict()).max(100).optional(),dependencies:z.array(text).max(100).optional(),outstandingChecks:z.array(text).max(100).optional(),termMonths:z.number().int().positive().max(120),taxBasis:z.enum(['excluding_tax','including_tax','not_confirmed']),
  originalDocument:z.object({storageRef:text,sha256:z.string().regex(/^[a-f0-9]{64}$/),name:text}).strict().nullable(),
  lines:z.array(quoteLine).min(1).max(10000),supplierAssumptions:z.array(text).max(100),
-}).strict().superRefine((q,ctx)=>{if(new Set(q.lines.map(l=>l.scopeLineId)).size!==q.lines.length)ctx.addIssue({code:'custom',message:'Duplicate quotation scope line'});if(q.lines.some(l=>l.extracted)&&!q.originalDocument)ctx.addIssue({code:'custom',message:'Extracted quotations must retain their original document'});});
+}).strict().superRefine((q,ctx)=>{if(new Set(q.lines.map(l=>l.lineId??l.scopeLineId)).size!==q.lines.length)ctx.addIssue({code:'custom',message:'Duplicate quotation scope line'});if(q.lines.some(l=>l.extracted)&&!q.originalDocument)ctx.addIssue({code:'custom',message:'Extracted quotations must retain their original document'});});
 export type StructuredQuotation=z.infer<typeof StructuredQuotationSchema>;
 export function awaitingLines(scope:PricedScope):StructuredQuotation['lines']{return scope.lines.map(l=>({scopeLineId:l.id,status:'awaiting_supplier',mode:'referred',level:'supplier_quotation',source:null,unit:l.unit,quantity:l.quantity,currency:null,amountMinor:null,charge:null,periodMonths:null,inclusions:[],exclusions:[],assumptions:[],extracted:false,reviewedBy:null,reviewedAt:null}));}
 export function compareQuotation(scope:PricedScope,value:unknown,now=new Date()){
@@ -98,15 +98,14 @@ export function compareQuotation(scope:PricedScope,value:unknown,now=new Date())
  if(l.status!=='awaiting_supplier'&&l.extracted&&(!l.reviewedBy||!l.reviewedAt))differences.push('Extraction awaits review: '+l.scopeLineId);
  if(l.assumptions.length||l.exclusions.length)differences.push('Line qualifications need review: '+l.scopeLineId);
  if(l.status!=='awaiting_supplier'&&l.charge==='recurring'&&q.termMonths%l.periodMonths!)differences.push('Billing periods do not divide the requested term: '+l.scopeLineId);}
- const quotationByLine=new Map(q.lines.map(l=>[l.scopeLineId,l]));
- const awaiting=s.lines.filter(l=>{const offered=quotationByLine.get(l.id);return !offered||offered.status==='awaiting_supplier';}).map(l=>l.id);
+ const awaiting=s.lines.filter(l=>{const offered=q.lines.filter(q=>q.scopeLineId===l.id);return !offered.length||offered.some(q=>q.status==='awaiting_supplier');}).map(l=>l.id);
  const currencies=[...new Set(q.lines.flatMap(l=>l.currency?[l.currency]:[]))];if(currencies.length!==1)differences.push('No single quotation currency');
  const safe=(n:bigint)=>{if(n>BigInt(Number.MAX_SAFE_INTEGER))throw Error('Price total exceeds safe supported precision');return Number(n);};
  let oneOff=BigInt(0),recurringOverTerm=BigInt(0);
  if(!differences.length)for(const l of q.lines.filter(l=>l.status!=='awaiting_supplier')){const amount=BigInt(l.amountMinor!)*BigInt(l.quantity!);if(l.charge==='one_off')oneOff+=amount;else recurringOverTerm+=amount*BigInt(q.termMonths/l.periodMonths!);}
  const complete=awaiting.length===0&&differences.length===0;
  const total=oneOff+recurringOverTerm,sites=s.short.sitesByCountry.reduce((n,c)=>n+c.sites,0);
- return {supplierId:q.supplierId,environment:q.environment,lineLabels:q.lines.map(l=>{const current=scopeMatches&&Date.parse(q.receivedAt)<=now.getTime()&&!!l.source&&Date.parse(l.source.issuedAt)<=now.getTime()&&Date.parse(l.source.validUntil)>now.getTime();return {id:l.scopeLineId,label:l.status==='awaiting_supplier'||!current?'awaiting supplier':l.status,originalStatus:l.status,current};}),awaiting,differences,complete,
+ return {supplierId:q.supplierId,environment:q.environment,lineLabels:q.lines.map(l=>{const current=scopeMatches&&Date.parse(q.receivedAt)<=now.getTime()&&!!l.source&&Date.parse(l.source.issuedAt)<=now.getTime()&&Date.parse(l.source.validUntil)>now.getTime();return {id:l.scopeLineId,line_id:l.lineId??l.scopeLineId,source:l.source?.source??null,source_ref:l.source?.sourceRef??null,date:l.source?.issuedAt??null,valid_until:l.source?.validUntil??null,label:l.status==='awaiting_supplier'||!current?'awaiting supplier':l.status,originalStatus:l.status,current};}),awaiting,differences,complete,
  totals:differences.length?null:{currency:currencies[0],oneOffMinor:safe(oneOff),recurringOverTermMinor:safe(recurringOverTerm),pricedSubtotalMinor:safe(total),estateTotalMinor:complete?safe(total):null,
  perSitePerMonth:complete&&sites>0?{numeratorMinor:safe(total),denominator:sites*q.termMonths}:null,
  perUserPerMonth:complete&&s.short.users?{numeratorMinor:safe(total),denominator:s.short.users*q.termMonths}:null},

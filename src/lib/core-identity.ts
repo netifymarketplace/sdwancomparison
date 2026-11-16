@@ -1,4 +1,6 @@
 import {privateMailEnabled,sendPrivateVerification} from './core-mail';
+import {measureCoreEvent} from './final-measurement-hooks';
+import {queueOwnerNotification} from './final-notifications';
 import {coreEnvironment} from './core-host';
 import {coreOriginAllowed,coreLocationPath} from './core-host';
 import {createCipheriv,createDecipheriv,createHmac,randomBytes,randomUUID} from 'node:crypto';
@@ -34,6 +36,7 @@ export async function requestVerification(args:{projectId:string;edit?:string;em
 export async function completeVerification(challenge:unknown,origin:string){const value=requireToken(challenge),base=trustedCoreOrigin(origin),session=token(),edit=token(),sql=coreDatabase();
  const rows=await sql.query('SELECT netify_core_phase1.complete_verification($1,$2,$3,$4) AS result',[sha(value),randomUUID(),sha(session),sha(edit)]),r=rows[0].result;
  if(r.error)throw new CoreError(404,'verification_unavailable');
+ if(r.purpose==='claim'){await measureCoreEvent(r.project_id,'project_claimed','claim:'+r.project_id).catch(()=>console.error('platform_measurement_unavailable'));await queueOwnerNotification('project_claimed',r.project_id,r.project_id).catch(()=>console.error('owner_notification_queue_unavailable'));}
  return {publisher:'Netify',version:IDENTITY_VERSION,status:coreEnvironment()==='production'?'verified':'verified_in_development',project_id:r.project_id,revision:r.revision,purpose:r.purpose,session,edit_link:base+coreLocationPath()+'?core='+r.project_id+'#cap='+edit,edit_token:edit,private_only:true,live_email:privateMailEnabled()};
 }
 export async function ownerStatus(projectId:string,session:string){const sql=coreDatabase();if(!session||!/^[A-Za-z0-9_-]{43}$/.test(session))return {owner:false};

@@ -1264,6 +1264,7 @@ async function executePublishLocked(project: ProjectDetails, sessionEmail: strin
       ? await queueAdminAlert({ kind: "project", reference: published.id, revision: snapshot.id, format: isStudioProject(published) && studioDraftFromProject(published).format === "rfi" ? "RFI" : "RFP" })
       : null;
     await savePublishedSnapshot(project.id, snapshot);
+    if(!published.test&&board.listed)await import('./final-notifications').then(m=>m.queueOwnerNotification('legacy_opportunity_published',snapshot.id)).catch(()=>console.error('owner_notification_queue_unavailable'));
     if (adminAlert) await tryAdminAlert(adminAlert);
   }
   // A resumed event repairs a missing snapshot without adding a governed revision.
