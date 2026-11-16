@@ -12,7 +12,7 @@ export function coreOriginAllowed(origin:string){
  return coreLiveEnabled()&&['netify.co.uk',process.env.VERCEL_URL,process.env.VERCEL_BRANCH_URL,'sasecomparison-netifymarketplace.vercel.app','sase.netify.co.uk','app.netify.co.uk','project-8q2xb.vercel.app'].filter(Boolean).includes(u.host);
 }
 export const coreCanonicalOrigin=(origin:string)=>coreLiveEnabled()&&coreOriginAllowed(origin)?'https://netify.co.uk':origin;
-export const coreLocationPath=()=>(process.env.VERCEL_ENV||process.env.NETIFY_CORE_WEB_BASEPATH==='/sase')?'/sase/locations/':'/locations/';
+export const coreLocationPath=()=>'/marketplace/';
 /** Retain the legacy live registry until the separate 26-tool live smoke passes. */
 export const coreBuyerRegistryEnabled=()=>process.env.NETIFY_CORE_PHASE23==='1'&&(process.env.VERCEL_ENV!=='production'||process.env.NETIFY_CORE_LEGACY_MCP==='0');
 

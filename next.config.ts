@@ -28,7 +28,7 @@ const nextConfig: NextConfig = {
   // made valid PDF uploads fail on Vercel because that worker disappeared.
   serverExternalPackages: ["pdf-parse", "@napi-rs/canvas"],
   outputFileTracingIncludes: {
-    "/locations{,/**}": ["./preview/context-space/**/*", "./data/**/*"],
+    "/marketplace{,/**}": ["./preview/context-space/**/*", "./data/**/*"],
     "/api/context-preview/**": ["./preview/context-space/**/*", "./data/**/*"],
     "/api/workspace/ingest-file": [
       "./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs",
