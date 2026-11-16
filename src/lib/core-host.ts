@@ -15,3 +15,6 @@ export const coreCanonicalOrigin=(origin:string)=>coreLiveEnabled()&&coreOriginA
 export const coreLocationPath=()=>(process.env.VERCEL_ENV||process.env.NETIFY_CORE_WEB_BASEPATH==='/sase')?'/sase/locations/':'/locations/';
 /** Retain the legacy live registry until the separate 26-tool live smoke passes. */
 export const coreBuyerRegistryEnabled=()=>process.env.NETIFY_CORE_PHASE23==='1'&&(process.env.VERCEL_ENV!=='production'||process.env.NETIFY_CORE_LEGACY_MCP==='0');
+
+/** Separate ordered release switch: machine discovery follows the public registry only when approved. */
+export const coreDiscoveryEnabled=()=>process.env.NETIFY_CORE_DISCOVERY_ENABLED==='1'&&coreBuyerRegistryEnabled();
