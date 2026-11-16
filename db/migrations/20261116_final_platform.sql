@@ -33,7 +33,6 @@ REVOKE ALL ON netify_core_phase1.platform_records,netify_core_phase1.platform_ev
 GRANT SELECT,INSERT,UPDATE ON netify_core_phase1.platform_records,netify_core_phase1.owner_notifications TO netify_core_runtime;
 GRANT SELECT,INSERT ON netify_core_phase1.platform_events,netify_core_phase1.owner_access_log TO netify_core_runtime;
 GRANT UPDATE(excluded,exclusion_reason) ON netify_core_phase1.platform_events TO netify_core_runtime;
-GRANT SELECT,DELETE ON netify_core_phase1.platform_records,netify_core_phase1.platform_events,netify_core_phase1.owner_notifications TO netify_core_purger;
 
 ALTER TABLE netify_core_phase1.platform_records DROP CONSTRAINT IF EXISTS platform_records_kind_check;
 ALTER TABLE netify_core_phase1.platform_records ADD CONSTRAINT platform_records_kind_check CHECK(kind IN ('supplier','commercial','supplier_grant','supplier_document','supplier_capture','organisation','membership','mandate','agent_client','agent_code','agent_token','public_evidence','reseller_enquiry'));

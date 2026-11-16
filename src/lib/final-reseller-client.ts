@@ -8,3 +8,7 @@ export function serverResellerClient(source:string){let s=source.replace("throw 
  // Commercial records are server maintained, not editable simulated earnings.
  const e=s.indexOf('function earnings(){'),a=s.indexOf('function activity(){',e);s=s.slice(0,e)+`function earnings(){return '<h2>Earnings</h2><p>Record only. No payment processing.</p><pre>'+esc(JSON.stringify(data.commercial,null,2))+'</pre>';}`+s.slice(a);
  return s;}
+
+/** A disabled reseller route never mounts the legacy or simulated customer workspace. */
+export const disabledResellerClient=String.raw`export function createPartnerWorkspace(){const box=document.createElement('div');box.setAttribute('role','status');box.innerHTML='<p>Reseller access is not enabled.</p><a href="https://netify.co.uk/go/bt-reseller-application/">Reseller enquiry ↗</a>';return box;}`;
+export function disabledWorkspaceMode(source:string){return source.replace('Reseller mode · Working with your customers','Reseller access is not enabled.');}
