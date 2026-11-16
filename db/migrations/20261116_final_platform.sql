@@ -37,3 +37,5 @@ GRANT SELECT,DELETE ON netify_core_phase1.platform_records,netify_core_phase1.pl
 
 ALTER TABLE netify_core_phase1.platform_records DROP CONSTRAINT IF EXISTS platform_records_kind_check;
 ALTER TABLE netify_core_phase1.platform_records ADD CONSTRAINT platform_records_kind_check CHECK(kind IN ('supplier','commercial','supplier_grant','supplier_document','supplier_capture','organisation','membership','mandate','agent_client','agent_code','agent_token','public_evidence','reseller_enquiry'));
+
+CREATE INDEX IF NOT EXISTS platform_events_project ON netify_core_phase1.platform_events(project_id,at DESC);
