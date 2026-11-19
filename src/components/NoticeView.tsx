@@ -250,8 +250,8 @@ export default function NoticeView({
         <ul className="list-disc space-y-1 pl-5 text-sm">
           <li><Link prefetch={false} href="/rfp-builder/questions" className="underline">Netify RFP question bank</Link></li>
           <li><Link prefetch={false} href="/rfp-builder/sample-rfp" className="underline">Sample RFP</Link></li>
-          <li><Link prefetch={false} href="/shortlist" className="underline">Shortlist builder</Link></li>
-          <li><Link prefetch={false} href="/vendors" className="underline">Vendor profiles</Link></li>
+          <li><Link prefetch={false} href="/shortlist/" className="underline">Shortlist builder</Link></li>
+          <li><Link prefetch={false} href="/vendors/" className="underline">Vendor profiles</Link></li>
           <li><a href="https://netify.co.uk/methodology/" className="underline">Netify research methodology</a></li>
         </ul>
       </Section>

@@ -180,7 +180,7 @@ export default async function BestPage({ params }: Props) {
             <span aria-hidden="true">→</span>
           </Link>
           <Link
-            href="/vendors"
+            href="/vendors/"
             className="inline-flex items-center px-4 py-2.5 border border-[var(--ink-900)] no-underline hover:bg-zinc-900 hover:text-white transition-colors rounded-full text-sm"
           >
             All 30 vendors
@@ -318,7 +318,7 @@ export default async function BestPage({ params }: Props) {
           {BEST_PAGES.filter((p) => p.slug !== page.slug).slice(0, 12).map((p) => (
             <Link
               key={p.slug}
-              href={`/best/${p.slug}`}
+              href={`/best/${p.slug}/`}
               className="px-3.5 py-1.5 text-sm rounded-full border border-[var(--ink-300,#ccc)] no-underline hover:border-[var(--ink-900)]"
             >
               {p.title.replace("Best SD-WAN and SASE providers for ", "")}

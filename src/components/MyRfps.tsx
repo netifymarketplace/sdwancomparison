@@ -117,7 +117,7 @@ export default function MyRfps() {
           <a href="https://netify.co.uk/sase-sd-wan-rfp-builder/" className="inline-flex items-center rounded-full bg-amber-500 px-5 py-2.5 text-sm font-medium text-zinc-950 no-underline hover:bg-amber-400 transition-colors">
             Describe your first project
           </a>
-          <Link prefetch={false} href="/shortlist" className="text-sm underline text-[var(--ink-700)]">
+          <Link prefetch={false} href="/shortlist/" className="text-sm underline text-[var(--ink-700)]">
             Not ready? Compare the market first
           </Link>
         </div>

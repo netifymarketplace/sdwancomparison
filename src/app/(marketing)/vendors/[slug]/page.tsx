@@ -181,7 +181,7 @@ export default async function VendorPage({ params }: Props) {
             Netify
           </Link>
           <span className="mx-2 text-[var(--ink-300)]">/</span>
-          <Link href="/vendors" className="no-underline text-[var(--ink-500)] hover:text-[var(--accent)]">
+          <Link href="/vendors/" className="no-underline text-[var(--ink-500)] hover:text-[var(--accent)]">
             Vendors
           </Link>
           <span className="mx-2 text-[var(--ink-300)]">/</span>
@@ -619,7 +619,7 @@ export default async function VendorPage({ params }: Props) {
                   {headToHeads.map((p) => (
                     <Link
                       key={p.slug}
-                      href={`/compare/${p.slug}`}
+                      href={`/compare/${p.slug}/`}
                       className="px-3.5 py-1.5 text-sm rounded-full border border-[var(--ink-300,#ccc)] no-underline hover:border-[var(--ink-900)]"
                     >
                       {vendor.name} vs {p.otherName}
@@ -636,7 +636,7 @@ export default async function VendorPage({ params }: Props) {
                   {bestAppearances.map((b) => (
                     <Link
                       key={b.slug}
-                      href={`/best/${b.slug}`}
+                      href={`/best/${b.slug}/`}
                       className="px-3.5 py-1.5 text-sm rounded-full border border-[var(--ink-300,#ccc)] no-underline hover:border-[var(--ink-900)]"
                     >
                       {b.title} · #{b.rank}
@@ -653,7 +653,7 @@ export default async function VendorPage({ params }: Props) {
                   {closePeers.map((p) => (
                     <Link
                       key={p.slug}
-                      href={`/vendors/${p.slug}`}
+                      href={`/vendors/${p.slug}/`}
                       className="px-3.5 py-1.5 text-sm rounded-full border border-[var(--ink-300,#ccc)] no-underline hover:border-[var(--ink-900)]"
                     >
                       {p.name}
@@ -671,7 +671,7 @@ export default async function VendorPage({ params }: Props) {
                 Score {vendor.name} against your requirements
               </Link>
               <Link
-                href="/vendors"
+                href="/vendors/"
                 className="inline-flex items-center px-4 py-2.5 text-sm border border-[var(--ink-300,#ccc)] rounded-full no-underline hover:border-[var(--ink-900)]"
               >
                 Back to the evaluated directory

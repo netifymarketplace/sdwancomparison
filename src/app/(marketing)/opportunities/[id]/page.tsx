@@ -108,7 +108,7 @@ export default async function OpportunityNoticePage({ params }: Props) {
               <ul className="space-y-2 text-sm">
                 <li><Link prefetch={false} href={`/opportunities/new?clone=${id}`} className="underline">Post a similar project</Link> (prefills this opportunity as your template)</li>
                 <li><a href={`/sase/rfp-builder/?from_opportunity=${id}`} className="underline">Turn this into a full RFP</a> (carries this opportunity into the builder)</li>
-                <li><Link prefetch={false} href="/shortlist" className="underline">Request a Netify shortlist</Link></li>
+                <li><Link prefetch={false} href="/shortlist/" className="underline">Request a Netify shortlist</Link></li>
               </ul>
               {!isSample && (
                 <p className="mt-3 text-xs text-[var(--ink-500)]">

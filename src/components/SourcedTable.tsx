@@ -136,7 +136,7 @@ export default function SourcedTable({
                     <td className="px-3 py-2.5 text-[var(--ink-600,#5b636e)] tabular-nums">{i + 1}</td>
                   )}
                   <th scope="row" className="text-left px-3.5 py-2.5 font-medium whitespace-nowrap">
-                    <Link href={`/vendors/${v.slug}`} className="underline">
+                    <Link href={`/vendors/${v.slug}/`} className="underline">
                       {v.name}
                     </Link>
                   </th>
@@ -164,7 +164,7 @@ export default function SourcedTable({
       <p className="text-sm text-[var(--ink-600,#5b636e)] mt-3 max-w-3xl">
         Full sources for each vendor, including the sources we found and rejected and any claims
         that disagree, are on its{" "}
-        <Link href="/vendors" className="underline">
+        <Link href="/vendors/" className="underline">
           profile page
         </Link>
         .

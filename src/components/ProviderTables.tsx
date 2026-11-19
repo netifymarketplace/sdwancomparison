@@ -160,7 +160,7 @@ function ComparisonTable({
                 return (
                   <tr key={v.slug} className="border-b border-[var(--ink-200,#e8ebef)]">
                     <th scope="row" className="text-left px-3.5 py-2.5 font-medium whitespace-nowrap">
-                      <Link href={`/vendors/${v.slug}`} className="underline">
+                      <Link href={`/vendors/${v.slug}/`} className="underline">
                         {v.name}
                       </Link>
                     </th>

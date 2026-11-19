@@ -82,7 +82,7 @@ export default function SupplierDashboard() {
         <p className="eyebrow mb-1">Signed in as</p>
         <p className="text-lg font-semibold">{slug ? vendorTitle(slug) : "Netify (relay)"}</p>
         <p className="text-sm text-[var(--ink-600)]">{session.email}{session.admin ? " · admin" : ""}</p>
-        {slug && <Link href={`/vendors/${slug}`} className="inline-block mt-3 text-sm underline">View your public profile</Link>}
+        {slug && <Link href={`/vendors/${slug}/`} className="inline-block mt-3 text-sm underline">View your public profile</Link>}
 
         {/* Profile claim status */}
         {session.role === "netify" ? (
