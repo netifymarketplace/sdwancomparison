@@ -1,3 +1,4 @@
+import { hasCronSecret } from "@/lib/cron-auth";
 import { adminAlertSummary } from "@/lib/admin-alerts";
 import {isAdminEmail} from "@/lib/access-control";
 import { pendingSourcingNotifications } from "@/lib/sourcing-notifications";
@@ -62,9 +63,7 @@ function engineChannelCounts(projects: { engine?: string; source?: string }[]) {
 }
 
 function cronAuthorised(req: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  return req.headers.get("authorization") === `Bearer ${secret}`;
+  return hasCronSecret(req);
 }
 
 function delta(now: number, prev: number | undefined): string {

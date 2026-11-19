@@ -12,7 +12,7 @@ import { currentBuyerFacts, projectWithCurrentBuyerFacts } from "./current-buyer
  * machine-callable object, not just a web form.
  */
 
-import { getProjectByToken, getProject, saveProject, listResponses, saveResponse, getConnectionByToken, newId, kvConfigured, kvRaw } from "@/lib/rfp-store";
+import { getProjectByToken, getProject, saveProject, listResponses, saveResponse, getConnectionByToken, newId, newSecretToken, kvConfigured, kvRaw } from "@/lib/rfp-store";
 import { addMessage } from "@/lib/rfp-connect";
 import { resolveOpportunityToken, getOpportunity, listPublicOpportunities } from "@/lib/rfp-store";
 import { addFeedItem, vendorName, maskedFeed } from "@/lib/opportunity";
@@ -370,7 +370,7 @@ export async function callRfpTool(name: string, args: Record<string, unknown>, c
       id, created: Date.now(), updated: Date.now(), status: "draft",
       title: String(args.title ?? "") || `RFP: ${source.title}`,
       buyer, rfp_sections: synthesiseSections(buyer), invited_vendors: [],
-      share_token: newId("tok"), manage_token: newId("mtok"), source: "mcp", methodology_version: "2026.1",
+      share_token: newSecretToken("tok"), manage_token: newSecretToken("mtok"), source: "mcp", methodology_version: "2026.1",
     });
     const saved = await saveProject(project);
     return {

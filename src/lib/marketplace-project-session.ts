@@ -9,7 +9,7 @@ import { ProjectEntranceContextSchema } from "@/lib/project-entrance-contract";
 import { entranceToProjectDetails } from "@/lib/project-entrance";
 import { ProjectDetailsSchema, SectorProfileStateSchema, PROJECT_JOURNEY_MODES } from "@/lib/rfp-types";
 import { MARKETPLACE_PUBLICATION_CONSENT_TEXT, MARKETPLACE_PUBLICATION_CONSENT_VERSION } from "@/lib/publication-policy";
-import { getProject, kvGetJson, kvRaw, newId, saveProject } from "@/lib/rfp-store";
+import { getProject, kvGetJson, kvRaw, newId, newSecretToken, saveProject } from "@/lib/rfp-store";
 import { ProviderMatchInputSchema, PROVIDER_MATCH_METHODOLOGY_VERSION } from "@/lib/provider-matching";
 import { recordMarketplaceFunnelEvent } from "@/lib/marketplace-funnel";
 import { getStrictLiveShortlistDataset, shortlistInputFromProviderMatchInput } from "@/lib/live-shortlist";
@@ -64,7 +64,7 @@ export async function startMarketplaceProject(input: { entrance_context: unknown
   const now = input.now ?? Date.now();
   const scope = typeof entrance.raw_input.solution_scope === "string" ? entrance.raw_input.solution_scope.toUpperCase() : "SASE / SD-WAN";
   const title = input.mode === "quick_list" || input.mode === "find_providers" ? `${scope} opportunity${entrance.sector ? ` for ${entrance.sector}` : ""}` : undefined;
-  const project = entranceToProjectDetails({ entrance, ids: { id: newId("rfp"), shareToken: newId("tok"), manageToken: newId("mtok") }, now, title });
+  const project = entranceToProjectDetails({ entrance, ids: { id: newId("rfp"), shareToken: newSecretToken("tok"), manageToken: newSecretToken("mtok") }, now, title });
   const workspace = await preserveWorkspace(null, entrance.raw_input);
   let initial = ProjectDetailsSchema.parse({ ...project, ...workspace, journey: { contract_version: "project-journey/1.0.0", source: entrance.source, mode: input.mode, source_url: entrance.source_url, started_at: now }, sector_profile: sectorProfile, marketplace_revision: 0, marketplace_state: { contract_version: "project-marketplace-state/1.0.0", publication_status: "draft", board_opportunity_id: null, market_unlock_status: "locked", server_updated_at: now } });
   if (entrance.raw_input.studio_draft) initial = applyStudioFields(initial, entrance.raw_input.studio_draft);

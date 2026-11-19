@@ -1,6 +1,6 @@
 import { recordMarketplaceFunnelEvent } from "@/lib/marketplace-funnel-safe";
 import { corsHeaders, preflight } from "@/lib/cors";
-import { saveOpportunity, kvConfigured, newId, listPublicOpportunities } from "@/lib/rfp-store";
+import { saveOpportunity, kvConfigured, newId, newSecretToken, listPublicOpportunities } from "@/lib/rfp-store";
 import { addFeedItem } from "@/lib/opportunity";
 import { queueAdminAlert, tryAdminAlert } from "@/lib/admin-alerts";
 import { sessionFromRequest } from "@/lib/auth";
@@ -87,7 +87,7 @@ export async function POST(req: Request) {
     regions: strArray(body.regions, 10),
     summary: String(body.summary ?? ""), budget_note: String(body.budget_note ?? ""), timeline_note: String(body.timeline_note ?? ""),
     status: "open", engagement_type, auction_format, deadline, eligibility, visibility,
-    awarded_vendor_slug: null, buyer_token: newId("btok"), invited: [], feed: [],
+    awarded_vendor_slug: null, buyer_token: newSecretToken("btok"), invited: [], feed: [],
     // Project notice fields
     buyer_visibility,
     buyer_sector: String(body.buyer_sector ?? ""),
