@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build:botid-client": "esbuild scripts/botid/marketplace-botid-entry.mjs --bundle --format=esm --minify --define:process.env.NODE_ENV='\"production\"' --legal-comments=none --outfile=preview/context-space/vendor/botid.js",
+    "test:send-guard": "tsx --import ./scripts/core-test-bootstrap.mjs scripts/test-send-guard.ts",
     "test:buyer-recovery": "tsx scripts/test-buyer-recovery.ts && tsx scripts/test-notice-recovery.ts",
     "dev": "next dev",
     "build": "node scripts/build-release.mjs",
@@ -69,15 +71,16 @@
     "@anthropic-ai/sdk": "^0.104.1",
     "@napi-rs/canvas": "0.1.80",
     "@neondatabase/serverless": "^1.2.1",
+    "botid": "^1.5.13",
     "docx": "^9.7.1",
     "exceljs": "^4.4.0",
+    "jsdom": "26.1.0",
     "mammoth": "^1.12.1",
     "next": "16.4.6",
     "pdf-parse": "^2.4.5",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "svix": "^1.99.1",
-    "jsdom": "26.1.0"
+    "svix": "^1.99.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
