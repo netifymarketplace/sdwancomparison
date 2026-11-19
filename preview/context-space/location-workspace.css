@@ -178,3 +178,4 @@
 
 .ls-pagination{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0;font:14px system-ui}.ls-pagination label{display:flex;align-items:center;gap:8px}.ls-pagination select{width:auto!important}.ls-import-dialog button,.ls-import-dialog .ls-receipt-link{display:inline-block;padding:12px 18px;border:1px solid #b6d1c2;border-radius:9px;background:#edf6f0;color:#23463d;font:600 15px system-ui;text-decoration:none;margin:8px 8px 0 0}.ls-import-dialog .ls-primary{background:#246b55;color:white}.ls-import-dialog .ls-receipt-link{display:block;width:fit-content}.ls-pagination button{min-height:40px}
 #ls-document-estate pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;max-width:100%}
+#netify-space #location-studio .ls-heading p.ls-trust{margin-top:6px;font-size:12px;font-weight:600;color:#2f6b4f}
