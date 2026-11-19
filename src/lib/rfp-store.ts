@@ -84,8 +84,24 @@ export async function kvRaw(command: (string | number)[]): Promise<unknown> {
   return kv(command);
 }
 
+/**
+ * Record id: time-ordered, lowercase alphanumeric (callers validate
+ * `rfp_[a-z0-9]+`). Not a credential; use newSecretToken() for anything that
+ * grants access. Web Crypto, because edge routes import this module too.
+ */
 export function newId(prefix: string): string {
-  return `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+  return `${prefix}_${Date.now().toString(36)}${crypto.randomUUID().replace(/-/g, "").slice(0, 8)}`;
+}
+
+/**
+ * Bearer credential (session, magic link, share/manage/supplier/opportunity
+ * link): 256 bits from the CSPRNG, base64url-encoded so it is URL- and
+ * cookie-safe.
+ */
+export function newSecretToken(prefix: string): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  const base64 = btoa(String.fromCharCode(...bytes));
+  return `${prefix}_${base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")}`;
 }
 
 /* ---- ProjectDetails ---- */
@@ -542,7 +558,7 @@ export async function getOrCreateSupplierVendorToken(rfpId: string, vendorSlug: 
   const key = `rfp:svtok:${rfpId}:${vendorSlug}`;
   const existing = (await kv(["GET", key])) as string | null;
   if (existing) return existing;
-  const token = newId("svtok");
+  const token = newSecretToken("svtok");
   await kv(["SET", `rfp:svtok-ref:${token}`, JSON.stringify({ rfp_id: rfpId, vendor_slug: vendorSlug })]);
   await kv(["SET", key, token]);
   return token;
@@ -643,7 +659,7 @@ export async function deleteOpportunity(id: string): Promise<boolean> {
 
 /** Per-supplier access token for an opportunity. Also indexes the invite by vendor. */
 export async function inviteToOpportunity(oppId: string, vendorSlug: string): Promise<string> {
-  const token = newId("otok");
+  const token = newSecretToken("otok");
   await kv(["SET", `opp:tok:${token}`, JSON.stringify({ opp_id: oppId, vendor_slug: vendorSlug })]);
   await kv(["SADD", `vendor:opps:${vendorSlug}`, oppId]);
   return token;
@@ -688,7 +704,7 @@ const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 export type SignupAttribution = { ref: string; landing: string; page: string; country: string };
 
 export async function createMagicToken(payload: { role: "supplier" | "buyer" | "netify"; email: string; vendor_slug: string | null; rfp_id?: string | null; attr?: SignupAttribution | null }): Promise<string> {
-  const token = newId("magic");
+  const token = newSecretToken("magic");
   await kv(["SET", `auth:magic:${token}`, JSON.stringify({ ...payload, created: Date.now(), expires: Date.now() + MAGIC_TTL_MS })]);
   await kv(["PEXPIRE", `auth:magic:${token}`, MAGIC_TTL_MS]);
   return token;
@@ -702,7 +718,7 @@ export async function consumeMagicToken(token: string): Promise<{ role: "supplie
 }
 
 export async function createSession(payload: { role: "supplier" | "buyer" | "netify"; email: string; vendor_slug: string | null }): Promise<AuthSession> {
-  const token = newId("sess");
+  const token = newSecretToken("sess");
   const session: AuthSession = { token, ...payload, created: Date.now(), expires: Date.now() + SESSION_TTL_MS };
   await kv(["SET", `auth:sess:${token}`, JSON.stringify(session)]);
   await kv(["PEXPIRE", `auth:sess:${token}`, SESSION_TTL_MS]);

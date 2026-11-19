@@ -8,7 +8,7 @@ import { kvRaw } from "@/lib/rfp-store";
 import { currentBuyerFacts, currentPublicBrief, projectWithCurrentBuyerFacts, currentDocumentCounts, currentDocumentIsConsistent } from "@/lib/current-buyer-facts";
 import { recordMarketplaceFunnelEvent } from "@/lib/marketplace-funnel-safe";
 import { isShortProject, shortProjectReadiness, shortProjectNotice, projectMatchingInput } from "@/lib/short-project";
-import { saveProject, saveOpportunity, getOpportunity, newId, kvGetJson, kvSetJson, indexRfpForBuyer, listSignoffs, listPublicOpportunities, getOrCreateSupplierVendorToken } from "@/lib/rfp-store";
+import { saveProject, saveOpportunity, getOpportunity, newId, newSecretToken, kvGetJson, kvSetJson, indexRfpForBuyer, listSignoffs, listPublicOpportunities, getOrCreateSupplierVendorToken } from "@/lib/rfp-store";
 import { ensureDistinctNoticeTitle } from "@/lib/notice-title";
 import { advanceProject, recordProjectEvent } from "@/lib/project-machine";
 import { publishDecisionGate, declinedConfirmationText, PUBLISH_DESPITE_DECLINED_ACTION, ENGINE_PUBLISH_CONSENT_TEXT } from "@/lib/project-approvals";
@@ -244,7 +244,7 @@ export async function listRfpOnBoard(
     eligibility: "open",
     visibility,
     awarded_vendor_slug: existing?.awarded_vendor_slug ?? null,
-    buyer_token: existing?.buyer_token ?? newId("btok"),
+    buyer_token: existing?.buyer_token ?? newSecretToken("btok"),
     invited: existing?.invited ?? [],
     feed: existing?.feed ?? [],
     buyer_visibility: "anonymous", // RFPs carry no org name; sector/size describe the buyer

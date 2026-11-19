@@ -1,3 +1,4 @@
+import { randomInt } from "node:crypto";
 import {authenticateMarketplaceProject} from '@/lib/marketplace-project-session';
 import {isStudioProject} from '@/lib/studio-project';
 import { recordPublicationIssue } from '@/lib/publication-issues';
@@ -253,7 +254,7 @@ export async function POST(req: Request) {
   // submit, session. 15 minute expiry, 5 attempts, one code per email.
   let code: string | undefined;
   try {
-    code = String(Math.floor(100000 + Math.random() * 900000));
+    code = String(randomInt(100000, 1000000));
     const codeKey = `auth:code:${email}`;
     await kvSetJson(codeKey, { token, code, attempts: 0, expires: Date.now() + 15 * 60 * 1000 });
     await kvRaw(["PEXPIRE", codeKey, 15 * 60 * 1000]);
