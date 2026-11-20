@@ -1,4 +1,4 @@
-import { getAllVendorSlugs } from "@/lib/vendors";
+import { getAllVendorSlugs, getShortlistDataset } from "@/lib/vendors";
 import { BEST_PAGES } from "@/lib/best-pages";
 import { COMPARE_PAIRS } from "@/lib/compare-pages";
 import { SAMPLE_NOTICES } from "@/lib/sample-notices";
@@ -15,6 +15,15 @@ function sourcingLastmod(loc: string): string {
     || loc.startsWith(`${SITE_URL}/best/`)
     || loc.startsWith(`${SITE_URL}/alternatives/`)
     ? `<lastmod>${SOURCING_RELEASE_LASTMOD}</lastmod>` : "";
+}
+
+// Only list research pages that actually serve. /alternatives/[slug] renders from the published shortlist dataset, so a vendor
+// file outside it (fatpipe-networks, hughes) 404s.
+// /alternatives/peplink/ is a dedicated static page and still serves.
+const STATIC_ALTERNATIVES = new Set(["peplink"]);
+function servingAlternativeSlugs(): string[] {
+  const published = new Set(getShortlistDataset().map((v) => v.slug));
+  return getAllVendorSlugs().filter((slug) => published.has(slug) || STATIC_ALTERNATIVES.has(slug));
 }
 
 export async function GET() {
@@ -88,7 +97,7 @@ export async function GET() {
       loc: `${SITE_URL}/best/${p.slug}`,
       priority: "0.9",
     })),
-    ...getAllVendorSlugs().map((slug) => ({
+    ...servingAlternativeSlugs().map((slug) => ({
       loc: `${SITE_URL}/alternatives/${slug}`,
       priority: "0.7",
     })),

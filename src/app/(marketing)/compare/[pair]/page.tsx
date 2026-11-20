@@ -95,7 +95,7 @@ export default async function ComparePage({ params }: Props) {
       <nav aria-label="Breadcrumb" className="text-sm mb-6 text-[var(--ink-500)]">
         <Link href="/" className="no-underline text-[var(--ink-500)] hover:text-[var(--accent)]">Netify</Link>
         <span className="mx-2 text-[var(--ink-300)]">/</span>
-        <Link href="/vendors" className="no-underline text-[var(--ink-500)] hover:text-[var(--accent)]">Vendors</Link>
+        <Link href="/vendors/" className="no-underline text-[var(--ink-500)] hover:text-[var(--accent)]">Vendors</Link>
         <span className="mx-2 text-[var(--ink-300)]">/</span>
         <span className="text-[var(--ink-700)]">{c.names[a]} vs {c.names[b]}</span>
       </nav>
@@ -121,7 +121,7 @@ export default async function ComparePage({ params }: Props) {
           <div key={s} className="border border-[var(--ink-300,#ccc)] rounded-sm p-5">
             <p className="eyebrow mb-1">Source evidence</p>
             <h2 className="text-lg mb-1">
-              <Link href={`/vendors/${s}`} className="no-underline hover:text-[var(--accent)]">{c.names[s]}</Link>
+              <Link href={`/vendors/${s}/`} className="no-underline hover:text-[var(--accent)]">{c.names[s]}</Link>
             </h2>
             <p className="text-sm text-[var(--ink-500)] mb-2">
               {c.meta[s].category} · Typical deployment: {c.meta[s].deployment_speed}
@@ -139,7 +139,7 @@ export default async function ComparePage({ params }: Props) {
                 Contact via Netify ↗
               </a>
               <Link
-                href={`/alternatives/${s}`}
+                href={`/alternatives/${s}/`}
                 className="px-3.5 py-1.5 text-sm border border-[var(--ink-300,#ccc)] rounded-full no-underline hover:border-[var(--ink-900)]"
               >
                 Alternatives
@@ -171,7 +171,7 @@ export default async function ComparePage({ params }: Props) {
           pageUrl={`${SITE_URL}/compare/${pair}`}
         />
         <p className="mt-3 text-sm text-[var(--ink-500)]">
-          Or <Link href="/shortlist" className="underline">explore source evidence in the shortlist builder</Link>.
+          Or <Link href="/shortlist/" className="underline">explore source evidence in the shortlist builder</Link>.
         </p>
       </div>
 
@@ -192,7 +192,7 @@ export default async function ComparePage({ params }: Props) {
         <p className="eyebrow mb-3">More head to heads</p>
         <div className="flex flex-wrap gap-2">
           {getRelatedPairs(pair, 12).map((p) => (
-            <Link key={p.slug} href={`/compare/${p.slug}`} className="px-3.5 py-1.5 text-sm rounded-full border border-[var(--ink-300,#ccc)] no-underline hover:border-[var(--ink-900)]">
+            <Link key={p.slug} href={`/compare/${p.slug}/`} className="px-3.5 py-1.5 text-sm rounded-full border border-[var(--ink-300,#ccc)] no-underline hover:border-[var(--ink-900)]">
               {p.slug.replace(/-vs-/, " vs ").replace(/-/g, " ")}
             </Link>
           ))}
